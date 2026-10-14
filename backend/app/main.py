@@ -21,6 +21,7 @@ from app.core.errors import (
 )
 from app.modules.child_mode.api import router as child_mode_router
 from app.modules.families.api import router as families_router
+from app.modules.goals.api import router as goals_router
 from app.modules.ledger.api import router as ledger_router
 from app.modules.rewards.api import purchases_router
 from app.modules.rewards.api import router as rewards_router
@@ -45,6 +46,7 @@ for router in (
     ledger_router,
     rewards_router,
     purchases_router,
+    goals_router,
 ):
     app.include_router(router)
 

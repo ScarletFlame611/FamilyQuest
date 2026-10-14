@@ -463,6 +463,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/goal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Goal */
+        get: operations["goal_api_goal_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -497,6 +514,21 @@ export interface components {
         CancelIn: {
             /** Reason */
             reason: string;
+        };
+        /** ContributionOut */
+        ContributionOut: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Name */
+            name: string;
+            /** Avatar */
+            avatar: string;
+            role: components["schemas"]["MemberRole"];
+            /** Points */
+            points: number;
         };
         /**
          * EntryKind
@@ -537,6 +569,53 @@ export interface components {
             name: string;
             /** Members */
             members: components["schemas"]["MemberOut"][];
+        };
+        /** FeedItemOut */
+        FeedItemOut: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Name */
+            name: string;
+            /** Avatar */
+            avatar: string;
+            /** Title */
+            title: string;
+            /** Points */
+            points: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * GoalIcon
+         * @enum {string}
+         */
+        GoalIcon: "tent";
+        /** GoalOut */
+        GoalOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            icon: components["schemas"]["GoalIcon"];
+            /** Target */
+            target: number;
+            /** Progress */
+            progress: number;
+            /** Reached */
+            reached: boolean;
+            /** Contributions */
+            contributions: components["schemas"]["ContributionOut"][];
+            /** Feed */
+            feed: components["schemas"]["FeedItemOut"][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1613,6 +1692,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    goal_api_goal_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalOut"];
                 };
             };
         };

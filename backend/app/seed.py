@@ -9,6 +9,7 @@ from app.core.config import get_settings
 from app.core.db import session_factory
 from app.modules.families import service as families
 from app.modules.goals import service as goals
+from app.modules.goals.enums import GoalIcon
 from app.modules.ledger import service as ledger
 from app.modules.rewards import service as rewards
 from app.modules.rewards.enums import RewardIcon
@@ -58,7 +59,7 @@ async def seed_demo_family(
     petya = await families.add_child(session, family_id, "Петя", "panda")
 
     # Цель создаётся раньше начислений, иначе они не попадут в её прогресс
-    await goals.create_goal(session, family_id, "Поход с палатками всей семьёй", "tent", 300)
+    await goals.create_goal(session, family_id, "Поход с палатками всей семьёй", GoalIcon.TENT, 300)
 
     await ledger.accrue(session, masha, 35, note="Стартовые баллы")
     # Вклады в цель: Мама 110, Папа 85, Маша 35, Петя 30 — всего 260 из 300.

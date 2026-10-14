@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import ConflictError, InvalidInputError, NotFoundError
-from app.modules.ledger.enums import BALANCE_KINDS, RESERVE_KINDS, EntryKind
+from app.modules.ledger.enums import BALANCE_KINDS, EARNING_KINDS, RESERVE_KINDS, EntryKind
 from app.modules.ledger.models import Account, LedgerEntry
 
 
@@ -31,6 +31,15 @@ class Balance:
     @property
     def available(self) -> int:
         return self.balance - self.reserved
+
+
+@dataclass(frozen=True)
+class EarningView:
+    member_id: uuid.UUID
+    amount: int
+    task_id: uuid.UUID | None
+    note: str | None
+    created_at: datetime
 
 
 @dataclass(frozen=True)
@@ -203,4 +212,48 @@ async def list_entries(
             created_at=entry.created_at,
         )
         for entry in entries
+    ]
+
+
+async def family_earnings_since(
+    session: AsyncSession, family_id: uuid.UUID, since: datetime
+) -> dict[uuid.UUID, int]:
+    """Сколько баллов заработал каждый участник семьи с указанного момента."""
+    rows = await session.execute(
+        select(Account.member_id, func.sum(LedgerEntry.amount))
+        .join(LedgerEntry, LedgerEntry.account_id == Account.id)
+        .where(
+            Account.family_id == family_id,
+            LedgerEntry.kind.in_(EARNING_KINDS),
+            LedgerEntry.created_at >= since,
+        )
+        .group_by(Account.member_id)
+    )
+    return {member_id: int(total) for member_id, total in rows.tuples()}
+
+
+async def recent_family_earnings(
+    session: AsyncSession, family_id: uuid.UUID, since: datetime, limit: int = 10
+) -> list[EarningView]:
+    """Возвращает последние начисления и их отмены в семье с указанного момента."""
+    rows = await session.execute(
+        select(Account.member_id, LedgerEntry)
+        .join(LedgerEntry, LedgerEntry.account_id == Account.id)
+        .where(
+            Account.family_id == family_id,
+            LedgerEntry.kind.in_(EARNING_KINDS),
+            LedgerEntry.created_at >= since,
+        )
+        .order_by(LedgerEntry.created_at.desc())
+        .limit(limit)
+    )
+    return [
+        EarningView(
+            member_id=member_id,
+            amount=entry.amount,
+            task_id=entry.task_id,
+            note=entry.note,
+            created_at=entry.created_at,
+        )
+        for member_id, entry in rows.tuples()
     ]
