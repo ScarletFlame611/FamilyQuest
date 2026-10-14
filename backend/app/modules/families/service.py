@@ -212,3 +212,11 @@ async def unlock_pin(session: AsyncSession, family_id: uuid.UUID) -> None:
     family = await session.get_one(Family, family_id, with_for_update=True)
     family.pin_failed_attempts = 0
     family.pin_locked = False
+
+
+async def member_exists(session: AsyncSession, family_id: uuid.UUID, member_id: uuid.UUID) -> bool:
+    """Проверяет, что участник ещё состоит в семье, например после пересоздания демо-семьи."""
+    found = await session.scalar(
+        select(Member.id).where(Member.id == member_id, Member.family_id == family_id)
+    )
+    return found is not None

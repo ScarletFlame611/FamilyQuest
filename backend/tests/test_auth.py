@@ -151,3 +151,12 @@ async def test_child_token_stops_working_when_session_ends(
     )
     await session.commit()
     assert (await client.get("/api/me", headers=bearer(tokens.access_token))).status_code == 401
+
+
+async def test_adult_token_of_deleted_family_is_rejected(
+    client: AsyncClient, session: AsyncSession, demo: DemoFamily
+):
+    token = (await login(client)).json()["access_token"]
+    await families.delete_family(session, demo.family_id)
+    await session.commit()
+    assert (await client.get("/api/family", headers=bearer(token))).status_code == 401

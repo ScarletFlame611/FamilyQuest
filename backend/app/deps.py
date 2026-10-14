@@ -10,6 +10,7 @@ from app.core.db import get_session
 from app.core.errors import ForbiddenError, UnauthorizedError
 from app.core.security import decode_access_token
 from app.modules.child_mode import service as child_mode
+from app.modules.families import service as families
 from app.modules.families.enums import MemberRole
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
@@ -45,6 +46,11 @@ async def current_member(
         and await child_mode.is_session_active(session, member.child_session_id, member.member_id)
     ):
         raise UnauthorizedError("Детский режим завершён")
+    # Токен живёт 15 минут, а участника или семью за это время могли удалить
+    if member.role is MemberRole.ADULT and not await families.member_exists(
+        session, member.family_id, member.member_id
+    ):
+        raise UnauthorizedError("Нужно войти заново")
     return member
 
 
