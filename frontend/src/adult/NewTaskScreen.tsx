@@ -7,6 +7,7 @@ import { navigate } from "../shared/lib/router";
 import { useAction } from "../shared/lib/useAction";
 import { useLoad } from "../shared/lib/useLoad";
 import { ActionButton } from "../shared/ui/ActionButton";
+import { Title } from "../shared/ui/layout";
 import { AdultLayout } from "./AdultLayout";
 
 const ICONS = Object.keys(TASK_ICONS) as TaskIcon[];
@@ -39,9 +40,7 @@ export function NewTaskScreen() {
 
   return (
     <AdultLayout>
-      <div className="title">
-        <h1>Новое дело</h1>
-      </div>
+      <Title text="Новое дело" />
       <section className="panel">
         <label className="field">
           Что сделать

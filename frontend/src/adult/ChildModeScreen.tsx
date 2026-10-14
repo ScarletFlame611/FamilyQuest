@@ -8,6 +8,7 @@ import { useAction } from "../shared/lib/useAction";
 import { useLoad } from "../shared/lib/useLoad";
 import { ActionButton } from "../shared/ui/ActionButton";
 import { clearHandoverHint, showHandoverHint } from "../child/handoverHint";
+import { Title } from "../shared/ui/layout";
 import { AdultLayout } from "./AdultLayout";
 
 export function ChildModeScreen() {
@@ -29,10 +30,7 @@ export function ChildModeScreen() {
 
   return (
     <AdultLayout>
-      <div className="title">
-        <h1>Детский режим</h1>
-        <p>Ребёнок увидит только свои дела, баланс, награды и копилку. Вернуться можно по PIN-коду.</p>
-      </div>
+      <Title text="Детский режим" hint="Ребёнок увидит только свои дела, баланс, награды и копилку. Вернуться можно по PIN-коду." />
       <section className="panel">
         <h2>Кто будет играть</h2>
         <div className="choices">

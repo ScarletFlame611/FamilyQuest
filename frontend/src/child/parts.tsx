@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { Task } from "../shared/api/types";
 import { TASK_ICONS, avatar } from "../shared/catalog";
 import { navigate } from "../shared/lib/router";
+import { Tile } from "../shared/ui/layout";
 import { useChild } from "./context";
 import { KeyIcon } from "./HandoverSheet";
 
@@ -64,23 +65,6 @@ export function SubHeader({ back, withBalance = true }: { back: string; withBala
   );
 }
 
-export function Title({ text, hint }: { text: string; hint?: string }) {
-  return (
-    <div className="title">
-      <h1>{text}</h1>
-      {hint && <p>{hint}</p>}
-    </div>
-  );
-}
-
-export function Tile({ emoji, tint, hero }: { emoji: string; tint: string; hero?: boolean }) {
-  return (
-    <span className={hero ? "hero" : "tile"} style={{ ["--tint" as string]: tint }}>
-      {emoji}
-    </span>
-  );
-}
-
 export function PointsChip({ points }: { points: number }) {
   return <span className="chip me">+{points} ⭐</span>;
 }
@@ -128,3 +112,5 @@ export function AutoReturnTimer() {
     </div>
   );
 }
+
+export { Title, Tile } from "../shared/ui/layout";

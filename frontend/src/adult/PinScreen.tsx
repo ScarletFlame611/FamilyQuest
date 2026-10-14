@@ -3,6 +3,7 @@ import { useState } from "react";
 import { api } from "../shared/api/endpoints";
 import { useAction } from "../shared/lib/useAction";
 import { ActionButton } from "../shared/ui/ActionButton";
+import { Title } from "../shared/ui/layout";
 import { AdultLayout } from "./AdultLayout";
 
 export function PinScreen() {
@@ -23,10 +24,7 @@ export function PinScreen() {
 
   return (
     <AdultLayout>
-      <div className="title">
-        <h1>PIN-код детского режима</h1>
-        <p>Без него ребёнок не выйдет из детского режима. Не используйте 1111 или 1234.</p>
-      </div>
+      <Title text="PIN-код детского режима" hint="Без него ребёнок не выйдет из детского режима. Не используйте 1111 или 1234." />
       <section className="panel">
         <label className="field">
           Новый PIN-код

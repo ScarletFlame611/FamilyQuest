@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 
+import { AdultGoalScreen } from "./adult/AdultGoalScreen";
 import { AdultTasksScreen } from "./adult/AdultTasksScreen";
 import { ChildModeScreen } from "./adult/ChildModeScreen";
 import { HomeScreen } from "./adult/HomeScreen";
 import { KanbanScreen } from "./adult/KanbanScreen";
 import { LoginScreen } from "./adult/LoginScreen";
+import { MoreScreen } from "./adult/MoreScreen";
 import { NewTaskScreen } from "./adult/NewTaskScreen";
 import { PinScreen } from "./adult/PinScreen";
 import { SessionsScreen } from "./adult/SessionsScreen";
@@ -17,6 +19,8 @@ const ADULT_SCREENS: Record<string, () => JSX.Element> = {
   "/tasks": AdultTasksScreen,
   "/tasks/new": NewTaskScreen,
   "/kanban": KanbanScreen,
+  "/goal": AdultGoalScreen,
+  "/more": MoreScreen,
   "/pin": PinScreen,
   "/child-mode": ChildModeScreen,
   "/sessions": SessionsScreen,

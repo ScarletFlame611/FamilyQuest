@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { api } from "../shared/api/endpoints";
-import { navigate, usePath } from "../shared/lib/router";
+import { usePath } from "../shared/lib/router";
 import { useLoad } from "../shared/lib/useLoad";
+import { TabBar } from "../shared/ui/layout";
 import { ChildContext } from "./context";
 import { track } from "./events";
 import { HandoverSheet } from "./HandoverSheet";
@@ -97,28 +98,11 @@ export function ChildApp() {
         <Screen screen={screen} id={id} tab={lastTab} />
       </div>
       {!tabsHidden && (
-        <nav
-          className="tabs"
-          aria-label="Разделы"
-          onClickCapture={(event) => {
-            const button = (event.target as HTMLElement).closest("button");
-            if (button) track("button_pressed", `Вкладка: ${button.textContent}`);
-          }}
-        >
-          <div className="tabs-in" style={{ gridTemplateColumns: `repeat(${TABS.length}, 1fr)` }}>
-            {TABS.map(([href, emoji, label]) => (
-              <button
-                key={href}
-                className={`tab ${tab === href ? "on" : ""}`}
-                aria-current={tab === href ? "page" : undefined}
-                onClick={() => navigate(href)}
-              >
-                <span className="ind">{emoji}</span>
-                {label}
-              </button>
-            ))}
-          </div>
-        </nav>
+        <TabBar
+          tabs={TABS}
+          active={tab}
+          onPress={(label) => track("button_pressed", `Вкладка: ${label}`)}
+        />
       )}
       <HandoverSheet balance={balance?.available ?? null} />
     </ChildContext.Provider>

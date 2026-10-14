@@ -3,6 +3,7 @@ import { useState } from "react";
 import { api } from "../shared/api/endpoints";
 import type { ChildSession, SessionEvents } from "../shared/api/types";
 import { useLoad } from "../shared/lib/useLoad";
+import { Title } from "../shared/ui/layout";
 import { AdultLayout } from "./AdultLayout";
 
 const EVENT_NAMES: Record<SessionEvents["events"][number]["type"], string> = {
@@ -82,10 +83,7 @@ export function SessionsScreen() {
   const { data: sessions, error } = useLoad(api.childSessions);
   return (
     <AdultLayout>
-      <div className="title">
-        <h1>Журнал детского режима</h1>
-        <p>Что делал ребёнок и через сколько секунд от начала сессии</p>
-      </div>
+      <Title text="Журнал детского режима" hint="Что делал ребёнок и через сколько секунд от начала сессии" />
       <section className="panel">
         {error && <div className="err">{error}</div>}
         {sessions && !sessions.length && <p>Детский режим ещё не включали.</p>}

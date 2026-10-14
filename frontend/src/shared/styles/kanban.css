@@ -19,3 +19,5 @@
 @media (min-width: 900px) {
   .kanban { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); overflow: visible; }
 }
+.kcard .kact.soft { background: var(--card); color: var(--ink); border: 1.5px solid var(--line); box-shadow: 0 2px 0 var(--line); }
+.kcard .kfield { grid-column: 1 / -1; }

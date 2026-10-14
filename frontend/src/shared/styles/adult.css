@@ -3,9 +3,6 @@
 .adult { user-select: text; }
 .adult .hd { justify-content: space-between; }
 .adult .hd b { font-family: var(--head); font-size: 20px; }
-.nav { display: flex; flex-wrap: wrap; gap: 8px; }
-.nav button { min-height: 44px; padding: 0 14px; border-radius: 999px; background: var(--card); border: 1.5px solid var(--line); color: var(--muted); font-size: 14px; font-weight: 800; }
-.nav button.on { background: var(--violet-soft); border-color: var(--violet-soft); color: var(--violet-dark); }
 .btn:disabled, .cta:disabled { opacity: .6; cursor: default; }
 .btn.green { background: var(--green); }
 .btn.soft { background: var(--violet-soft); color: var(--violet-dark); }
