@@ -1,5 +1,4 @@
 import asyncio
-import inspect
 from collections.abc import AsyncIterator
 
 import pytest
@@ -12,12 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from app.core.config import get_settings
 from app.core.db import get_session, make_engine
 from app.main import app
-
-
-def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
-    for item in items:
-        if inspect.iscoroutinefunction(getattr(item, "function", None)):
-            item.add_marker(pytest.mark.anyio)
 
 
 @pytest.fixture(scope="session")
@@ -70,6 +63,12 @@ async def engine(migrated_database: str) -> AsyncIterator[AsyncEngine]:
         if names:
             await conn.execute(text(f"TRUNCATE {names} RESTART IDENTITY CASCADE"))
     await engine.dispose()
+
+
+@pytest.fixture
+async def session(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
+    async with async_sessionmaker(engine, expire_on_commit=False)() as session:
+        yield session
 
 
 @pytest.fixture

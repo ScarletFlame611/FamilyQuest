@@ -1,10 +1,13 @@
 from collections.abc import AsyncIterator
 
+import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.db import get_session, make_engine
 from app.main import app
+
+pytestmark = pytest.mark.anyio
 
 
 async def test_health_ok(client: AsyncClient):

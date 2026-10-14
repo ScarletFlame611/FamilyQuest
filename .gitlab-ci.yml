@@ -24,6 +24,8 @@ pytest:
     DATABASE_URL: postgresql+asyncpg://familyquest:ci-only@db:5432/familyquest
     TEST_DATABASE_URL: postgresql+asyncpg://familyquest:ci-only@db:5432/familyquest_test
     JWT_SECRET: ci-only-not-a-secret
+    DEMO_MAMA_PASSWORD: ci-only
+    DEMO_PAPA_PASSWORD: ci-only
   script:
     - cd backend
     - pip install --no-cache-dir -r requirements-dev.txt

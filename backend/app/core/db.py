@@ -1,5 +1,7 @@
 from collections.abc import AsyncIterator
+from enum import StrEnum
 
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -23,6 +25,19 @@ NAMING_CONVENTION = {
 
 class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
+
+
+def str_enum(enum_cls: type[StrEnum], name: str) -> SAEnum:
+    # Строка с CHECK вместо типа ENUM в PostgreSQL: новое значение добавляется
+    # обычной миграцией ограничения, без ALTER TYPE
+    return SAEnum(
+        enum_cls,
+        name=name,
+        native_enum=False,
+        create_constraint=True,
+        length=16,
+        values_callable=lambda members: [m.value for m in members],
+    )
 
 
 def make_engine(url: str) -> AsyncEngine:

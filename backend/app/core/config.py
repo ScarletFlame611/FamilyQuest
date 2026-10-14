@@ -18,6 +18,9 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = []
 
+    demo_mama_password: SecretStr | None = None
+    demo_papa_password: SecretStr | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:
