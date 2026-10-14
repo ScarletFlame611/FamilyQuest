@@ -361,6 +361,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rewards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Rewards */
+        get: operations["list_rewards_api_rewards_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rewards/{reward_id}": {
         parameters: {
             query?: never;
@@ -372,6 +389,74 @@ export interface paths {
         get: operations["get_reward_api_rewards__reward_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rewards/{reward_id}/buy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Buy */
+        post: operations["buy_api_rewards__reward_id__buy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/purchases/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pending Purchases */
+        get: operations["pending_purchases_api_purchases_pending_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/purchases/{purchase_id}/give": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Give */
+        post: operations["give_api_purchases__purchase_id__give_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/purchases/{purchase_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel */
+        post: operations["cancel_api_purchases__purchase_id__cancel_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -407,6 +492,11 @@ export interface components {
             reserved: number;
             /** Available */
             available: number;
+        };
+        /** CancelIn */
+        CancelIn: {
+            /** Reason */
+            reason: string;
         };
         /**
          * EntryKind
@@ -500,6 +590,13 @@ export interface components {
          * @enum {string}
          */
         MemberRole: "adult" | "child";
+        /** NotEnoughOut */
+        NotEnoughOut: {
+            /** Detail */
+            detail: string;
+            /** Missing */
+            missing: number;
+        };
         /** PasswordIn */
         PasswordIn: {
             /** Password */
@@ -517,6 +614,44 @@ export interface components {
             /** Pin */
             pin: string;
         };
+        /** PurchaseOut */
+        PurchaseOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Reward Id
+             * Format: uuid
+             */
+            reward_id: string;
+            /** Title */
+            title: string;
+            icon: components["schemas"]["RewardIcon"];
+            /** Price */
+            price: number;
+            status: components["schemas"]["PurchaseStatus"];
+            /**
+             * Child Member Id
+             * Format: uuid
+             */
+            child_member_id: string;
+            /** Child Name */
+            child_name: string;
+            /** Cancel Reason */
+            cancel_reason: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * PurchaseStatus
+         * @enum {string}
+         */
+        PurchaseStatus: "pending" | "given" | "cancelled";
         /** RefreshIn */
         RefreshIn: {
             /** Refresh Token */
@@ -527,6 +662,30 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * RewardIcon
+         * @enum {string}
+         */
+        RewardIcon: "ice_cream" | "cartoon" | "markers" | "puzzle" | "park" | "construction_set";
+        /** RewardOfferOut */
+        RewardOfferOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            icon: components["schemas"]["RewardIcon"];
+            /** Price */
+            price: number;
+            /** Affordable */
+            affordable: boolean;
+            /** Missing */
+            missing: number;
+            /** Waiting */
+            waiting: boolean;
+        };
         /** RewardOut */
         RewardOut: {
             /**
@@ -536,8 +695,7 @@ export interface components {
             id: string;
             /** Title */
             title: string;
-            /** Icon */
-            icon: string;
+            icon: components["schemas"]["RewardIcon"];
             /** Price */
             price: number;
         };
@@ -1276,6 +1434,26 @@ export interface operations {
             };
         };
     };
+    list_rewards_api_rewards_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RewardOfferOut"][];
+                };
+            };
+        };
+    };
     get_reward_api_rewards__reward_id__get: {
         parameters: {
             query?: never;
@@ -1294,6 +1472,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RewardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    buy_api_rewards__reward_id__buy_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                reward_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotEnoughOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pending_purchases_api_purchases_pending_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOut"][];
+                };
+            };
+        };
+    };
+    give_api_purchases__purchase_id__give_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                purchase_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_api_purchases__purchase_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                purchase_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOut"];
                 };
             };
             /** @description Validation Error */

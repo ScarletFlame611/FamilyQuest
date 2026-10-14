@@ -11,6 +11,7 @@ from app.modules.families import service as families
 from app.modules.goals import service as goals
 from app.modules.ledger import service as ledger
 from app.modules.rewards import service as rewards
+from app.modules.rewards.enums import RewardIcon
 from app.modules.tasks import service as tasks
 from app.modules.tasks.enums import TaskIcon
 from app.modules.users import service as users
@@ -95,12 +96,12 @@ async def seed_demo_family(
         await tasks.create_task(session, family_id, author, title, icon, points, None)
 
     for title, icon, price in [
-        ("Мороженое", "ice_cream", 20),
-        ("Мультфильм перед сном", "cartoon", 30),
-        ("Фломастеры", "markers", 40),
-        ("Новый пазл", "puzzle", 60),
-        ("Поход в парк", "park", 80),
-        ("Конструктор", "construction_set", 150),
+        ("Мороженое", RewardIcon.ICE_CREAM, 20),
+        ("Мультфильм перед сном", RewardIcon.CARTOON, 30),
+        ("Фломастеры", RewardIcon.MARKERS, 40),
+        ("Новый пазл", RewardIcon.PUZZLE, 60),
+        ("Поход в парк", RewardIcon.PARK, 80),
+        ("Конструктор", RewardIcon.CONSTRUCTION_SET, 150),
     ]:
         await rewards.create_reward(session, family_id, title, icon, price)
 
