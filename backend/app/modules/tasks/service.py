@@ -246,3 +246,25 @@ async def reject(
     task.marked_at = None
     await session.flush()
     return await _view(session, family_id, task)
+
+
+async def confirm(session: AsyncSession, family_id: uuid.UUID, task_id: uuid.UUID) -> TaskView:
+    """Засчитывает отмеченное дело: статус и начисление меняются в одной транзакции."""
+    task = await _lock_task(session, family_id, task_id)
+    _transition(task, TaskAction.CONFIRM)
+    task.confirmed_at = now_utc()
+    if task.assignee_member_id is None:
+        raise TaskTransitionError("У дела нет исполнителя")
+    await ledger.accrue(session, task.assignee_member_id, task.points, task_id=task.id)
+    await session.flush()
+    return await _view(session, family_id, task)
+
+
+async def task_titles(
+    session: AsyncSession, family_id: uuid.UUID, task_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, str]:
+    """Возвращает названия задач своей семьи по идентификаторам."""
+    rows = await session.execute(
+        select(Task.id, Task.title).where(Task.family_id == family_id, Task.id.in_(task_ids))
+    )
+    return {row.id: row.title for row in rows}

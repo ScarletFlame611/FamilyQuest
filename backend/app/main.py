@@ -21,6 +21,7 @@ from app.core.errors import (
 )
 from app.modules.child_mode.api import router as child_mode_router
 from app.modules.families.api import router as families_router
+from app.modules.ledger.api import router as ledger_router
 from app.modules.rewards.api import router as rewards_router
 from app.modules.tasks.api import router as tasks_router
 from app.modules.users.api import router as users_router
@@ -35,7 +36,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for router in (users_router, families_router, child_mode_router, tasks_router, rewards_router):
+for router in (
+    users_router,
+    families_router,
+    child_mode_router,
+    tasks_router,
+    ledger_router,
+    rewards_router,
+):
     app.include_router(router)
 
 STATUS_BY_ERROR: list[tuple[type[DomainError], int]] = [

@@ -92,3 +92,13 @@ async def reject(
     return await run_idempotent(
         session, adult.member_id, key, f"reject:{task_id}:{body.reason}", action
     )
+
+
+@router.post("/{task_id}/confirm", response_model=TaskOut)
+async def confirm(
+    task_id: uuid.UUID, adult: AdultDep, session: SessionDep, key: IdempotencyKeyHeader = None
+) -> Response:
+    async def action() -> TaskOut:
+        return _out(await service.confirm(session, adult.family_id, task_id))
+
+    return await run_idempotent(session, adult.member_id, key, f"confirm:{task_id}", action)
