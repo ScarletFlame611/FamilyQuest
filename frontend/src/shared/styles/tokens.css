@@ -1,0 +1,40 @@
+/* Цвет кодирует смысл: янтарный — мои звёздочки, фиолетовый — семейная копилка,
+   зелёный — действие «сделал» или «купить». */
+:root {
+  --bg: #f6f3ff;
+  --card: #ffffff;
+  --ink: #241d45;
+  --muted: #6f6894;
+  --line: #e6e0f7;
+  --violet: #6b46e0;
+  --violet-dark: #4c2fb8;
+  --violet-soft: #ece6ff;
+  --amber: #f5a300;
+  --amber-soft: #fff1cc;
+  --amber-ink: #8a5a00;
+  --green: #21a058;
+  --green-dark: #167a41;
+  --green-soft: #ddf5e7;
+  --danger: #cf3d3d;
+  --head: "Comfortaa", "Nunito", sans-serif;
+  --body: "Nunito", "Segoe UI", Roboto, Arial, sans-serif;
+  --tabs-h: 76px;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100dvh;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-weight: 700;
+}

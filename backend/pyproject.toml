@@ -1,0 +1,29 @@
+[project]
+name = "familyquest-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "ASYNC", "DTZ", "TID", "SIM", "RUF"]
+# Русские строки и комментарии — норма для проекта, а не опечатка в латинице
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"os.environ".msg = "Окружение читается только через app.core.config.Settings"
+"os.getenv".msg = "Окружение читается только через app.core.config.Settings"
+"datetime.datetime.now".msg = "Время берётся только из app.core.clock.now_utc()"
+"datetime.datetime.utcnow".msg = "Время берётся только из app.core.clock.now_utc()"
+"uuid.uuid4".msg = "Идентификаторы создаются только через app.core.ids.new_id()"
+
+[tool.ruff.lint.per-file-ignores]
+"app/core/clock.py" = ["TID251"]
+"app/core/ids.py" = ["TID251"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["risk: проверки рисков из реестра, запускаются отдельно через -m risk"]
