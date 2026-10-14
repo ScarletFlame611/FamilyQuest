@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from app.core.config import get_settings
 from app.core.db import get_session, make_engine
 from app.main import app
+from app.seed import DemoFamily
+from tests.factories import seed
 
 
 @pytest.fixture(scope="session")
@@ -83,3 +85,8 @@ async def client(engine: AsyncEngine) -> AsyncIterator[AsyncClient]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def demo(session: AsyncSession) -> DemoFamily:
+    return await seed(session)

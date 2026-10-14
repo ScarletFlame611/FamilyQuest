@@ -1,14 +1,44 @@
 import uuid
+from dataclasses import dataclass
 from itertools import pairwise
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import InvalidInputError
+from app.core.errors import InvalidInputError, NotFoundError
 from app.core.security import hash_secret
 from app.modules.families.enums import MemberRole
 from app.modules.families.models import Family, Member
 from app.modules.ledger import service as ledger
+
+
+class MemberNotFoundError(NotFoundError):
+    pass
+
+
+@dataclass(frozen=True)
+class Membership:
+    member_id: uuid.UUID
+    family_id: uuid.UUID
+
+
+@dataclass(frozen=True)
+class MemberInfo:
+    id: uuid.UUID
+    name: str
+    role: MemberRole
+    avatar: str
+
+
+@dataclass(frozen=True)
+class FamilyInfo:
+    id: uuid.UUID
+    name: str
+    timezone: str
+
+
+def _info(member: Member) -> MemberInfo:
+    return MemberInfo(id=member.id, name=member.name, role=member.role, avatar=member.avatar)
 
 
 class WeakPinError(InvalidInputError):
@@ -84,3 +114,39 @@ async def find_family_id_by_user(session: AsyncSession, user_id: uuid.UUID) -> u
 async def delete_family(session: AsyncSession, family_id: uuid.UUID) -> None:
     """Удаляет семью вместе со всеми её данными."""
     await session.execute(delete(Family).where(Family.id == family_id))
+
+
+async def get_adult_membership(session: AsyncSession, user_id: uuid.UUID) -> Membership:
+    """Возвращает участника и семью взрослого аккаунта."""
+    row = (
+        await session.execute(select(Member.id, Member.family_id).where(Member.user_id == user_id))
+    ).one_or_none()
+    if row is None:
+        raise MemberNotFoundError("Аккаунт не состоит в семье")
+    return Membership(member_id=row.id, family_id=row.family_id)
+
+
+async def get_family(session: AsyncSession, family_id: uuid.UUID) -> FamilyInfo:
+    """Возвращает название и часовой пояс семьи."""
+    family = await session.get_one(Family, family_id)
+    return FamilyInfo(id=family.id, name=family.name, timezone=family.timezone)
+
+
+async def get_member(
+    session: AsyncSession, family_id: uuid.UUID, member_id: uuid.UUID
+) -> MemberInfo:
+    """Возвращает участника своей семьи; чужой участник неотличим от несуществующего."""
+    member = await session.scalar(
+        select(Member).where(Member.id == member_id, Member.family_id == family_id)
+    )
+    if member is None:
+        raise MemberNotFoundError("Участник не найден")
+    return _info(member)
+
+
+async def list_members(session: AsyncSession, family_id: uuid.UUID) -> list[MemberInfo]:
+    """Возвращает участников семьи: сначала взрослых, потом детей."""
+    members = await session.scalars(
+        select(Member).where(Member.family_id == family_id).order_by(Member.role, Member.created_at)
+    )
+    return [_info(member) for member in members]

@@ -13,18 +13,10 @@ from app.modules.ledger.enums import EntryKind
 from app.modules.ledger.models import Account, LedgerEntry
 from app.modules.users import service as users
 from app.modules.users.models import User
-from app.seed import DEMO_PIN, MAMA_EMAIL, seed_demo_family
+from app.seed import DEMO_PIN, MAMA_EMAIL
+from tests.factories import MAMA_PASSWORD, seed
 
 pytestmark = pytest.mark.anyio
-
-MAMA_PASSWORD = "mama-test-password"
-PAPA_PASSWORD = "papa-test-password"
-
-
-async def seed(session: AsyncSession):
-    demo = await seed_demo_family(session, MAMA_PASSWORD, PAPA_PASSWORD)
-    await session.commit()
-    return demo
 
 
 async def test_masha_starts_with_35_from_journal(session: AsyncSession):
