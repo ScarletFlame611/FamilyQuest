@@ -5,6 +5,8 @@ from fastapi import APIRouter, Response
 
 from app.core.idempotency import IdempotencyKeyHeader, run_idempotent
 from app.deps import AdultDep, ChildDep, MemberDep, SessionDep
+from app.modules.child_mode import service as child_mode
+from app.modules.child_mode.enums import ChildEventType
 from app.modules.rewards import service
 from app.modules.rewards.schemas import (
     CancelIn,
@@ -40,7 +42,11 @@ async def buy(
     reward_id: uuid.UUID, child: ChildDep, session: SessionDep, key: IdempotencyKeyHeader = None
 ) -> Response:
     async def action() -> PurchaseOut:
-        return _purchase(await service.buy(session, child.family_id, reward_id, child.member_id))
+        view = await service.buy(session, child.family_id, reward_id, child.member_id)
+        await child_mode.record_event(
+            session, child.child_session_id, ChildEventType.REWARD_BOUGHT, view.title
+        )
+        return _purchase(view)
 
     return await run_idempotent(session, child.member_id, key, f"buy:{reward_id}", action)
 

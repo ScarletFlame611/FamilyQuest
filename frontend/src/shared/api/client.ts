@@ -94,3 +94,13 @@ export async function request<T>(method: string, path: string, options: Options 
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
+
+// Файл (например, CSV) скачивается тем же путём, что и JSON, но отдаётся целиком
+export async function requestFile(path: string): Promise<Blob> {
+  const response = await send("GET", path, {});
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as ErrorBody;
+    throw new ApiError(response.status, body);
+  }
+  return response.blob();
+}

@@ -8,6 +8,7 @@ const LINKS = [
   ["/", "Главная"],
   ["/tasks/new", "Новое дело"],
   ["/pin", "PIN-код"],
+  ["/sessions", "Журнал"],
 ] as const;
 
 export function AdultLayout({ children }: { children: ReactNode }) {

@@ -1,13 +1,16 @@
 import { getSession, setSession } from "../session/session";
-import { request } from "./client";
+import { request, requestFile } from "./client";
 import type {
   Balance,
+  ChildEventType,
+  ChildSession,
   Entry,
   Family,
   Goal,
   Me,
   Purchase,
   RewardOffer,
+  SessionEvents,
   Task,
   TaskCreate,
   Tokens,
@@ -94,4 +97,11 @@ export const api = {
     }),
 
   goal: () => request<Goal>("GET", "/api/goal"),
+
+  sendChildEvents: (events: { type: ChildEventType; detail: string | null; ago_ms: number }[]) =>
+    request<void>("POST", "/api/child-mode/events", { body: { events } }),
+  childSessions: () => request<ChildSession[]>("GET", "/api/child-mode/sessions"),
+  sessionEvents: (id: string) =>
+    request<SessionEvents>("GET", `/api/child-mode/sessions/${id}/events`),
+  sessionEventsCsv: (id: string) => requestFile(`/api/child-mode/sessions/${id}/events.csv`),
 };

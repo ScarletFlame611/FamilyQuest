@@ -174,6 +174,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/child-mode/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Events */
+        post: operations["post_events_api_child_mode_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/child-mode/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sessions */
+        get: operations["sessions_api_child_mode_sessions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/child-mode/sessions/{session_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Session Events */
+        get: operations["session_events_api_child_mode_sessions__session_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/child-mode/sessions/{session_id}/events.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Session Events Csv */
+        get: operations["session_events_csv_api_child_mode_sessions__session_id__events_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tasks": {
         parameters: {
             query?: never;
@@ -515,6 +583,58 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** ChildEventOut */
+        ChildEventOut: {
+            type: components["schemas"]["ChildEventType"];
+            /** Detail */
+            detail: string | null;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Seconds From Start */
+            seconds_from_start: number;
+        };
+        /**
+         * ChildEventType
+         * @enum {string}
+         */
+        ChildEventType: "screen_opened" | "task_opened" | "button_pressed" | "task_taken" | "task_marked" | "reward_bought" | "wrong_pin" | "pin_locked" | "pin_exit" | "password_exit";
+        /** ChildSessionOut */
+        ChildSessionOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Child Member Id
+             * Format: uuid
+             */
+            child_member_id: string;
+            /** Child Name */
+            child_name: string;
+            /** Started By Name */
+            started_by_name: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Ended At */
+            ended_at: string | null;
+            /** Events */
+            events: number;
+        };
+        /** ClientEventIn */
+        ClientEventIn: {
+            type: components["schemas"]["ChildEventType"];
+            /** Detail */
+            detail?: string | null;
+            /** Ago Ms */
+            ago_ms: number;
+        };
         /** ContributionOut */
         ContributionOut: {
             /**
@@ -547,6 +667,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** EventsIn */
+        EventsIn: {
+            /** Events */
+            events: components["schemas"]["ClientEventIn"][];
         };
         /** FamilyBriefOut */
         FamilyBriefOut: {
@@ -777,6 +902,12 @@ export interface components {
             icon: components["schemas"]["RewardIcon"];
             /** Price */
             price: number;
+        };
+        /** SessionEventsOut */
+        SessionEventsOut: {
+            session: components["schemas"]["ChildSessionOut"];
+            /** Events */
+            events: components["schemas"]["ChildEventOut"][];
         };
         /** SetPinIn */
         SetPinIn: {
@@ -1207,6 +1338,119 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PinErrorOut"];
+                };
+            };
+        };
+    };
+    post_events_api_child_mode_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sessions_api_child_mode_sessions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChildSessionOut"][];
+                };
+            };
+        };
+    };
+    session_events_api_child_mode_sessions__session_id__events_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionEventsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    session_events_csv_api_child_mode_sessions__session_id__events_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

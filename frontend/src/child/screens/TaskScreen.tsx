@@ -6,6 +6,7 @@ import { navigate } from "../../shared/lib/router";
 import { errorText, useAction } from "../../shared/lib/useAction";
 import { useLoad } from "../../shared/lib/useLoad";
 import { setToast, useChild } from "../context";
+import { track } from "../events";
 import { PointsChip, SubHeader, Tile } from "../parts";
 
 export function TaskScreen({ id }: { id: string }) {
@@ -13,6 +14,11 @@ export function TaskScreen({ id }: { id: string }) {
   const { setTabsHidden } = useChild();
   const take = useAction((key) => api.take(key, id));
   const mark = useAction((key) => api.mark(key, id));
+
+  const title = task?.title;
+  useEffect(() => {
+    if (title) track("task_opened", title);
+  }, [title]);
 
   useEffect(() => {
     setTabsHidden(mark.pending);

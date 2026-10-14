@@ -5,6 +5,7 @@ import { HomeScreen } from "./adult/HomeScreen";
 import { LoginScreen } from "./adult/LoginScreen";
 import { NewTaskScreen } from "./adult/NewTaskScreen";
 import { PinScreen } from "./adult/PinScreen";
+import { SessionsScreen } from "./adult/SessionsScreen";
 import { ChildApp } from "./child/ChildApp";
 import { navigate, usePath } from "./shared/lib/router";
 import { useSession } from "./shared/session/session";
@@ -14,6 +15,7 @@ const ADULT_SCREENS: Record<string, () => JSX.Element> = {
   "/tasks/new": NewTaskScreen,
   "/pin": PinScreen,
   "/child-mode": ChildModeScreen,
+  "/sessions": SessionsScreen,
 };
 
 function homeOf(role: "adult" | "child" | null): string {

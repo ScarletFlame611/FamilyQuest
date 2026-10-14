@@ -5,6 +5,8 @@ from fastapi import APIRouter, Response, status
 
 from app.core.idempotency import IdempotencyKeyHeader, run_idempotent
 from app.deps import AdultDep, MemberDep, SessionDep
+from app.modules.child_mode import service as child_mode
+from app.modules.child_mode.enums import ChildEventType
 from app.modules.tasks import service
 from app.modules.tasks.schemas import RejectIn, TaskCreateIn, TaskOut
 
@@ -63,7 +65,12 @@ async def take(
     task_id: uuid.UUID, member: MemberDep, session: SessionDep, key: IdempotencyKeyHeader = None
 ) -> Response:
     async def action() -> TaskOut:
-        return _out(await service.take(session, member.family_id, task_id, member.member_id))
+        view = await service.take(session, member.family_id, task_id, member.member_id)
+        if member.child_session_id:
+            await child_mode.record_event(
+                session, member.child_session_id, ChildEventType.TASK_TAKEN, view.title
+            )
+        return _out(view)
 
     return await run_idempotent(session, member.member_id, key, f"take:{task_id}", action)
 
@@ -73,7 +80,12 @@ async def mark(
     task_id: uuid.UUID, member: MemberDep, session: SessionDep, key: IdempotencyKeyHeader = None
 ) -> Response:
     async def action() -> TaskOut:
-        return _out(await service.mark(session, member.family_id, task_id, member.member_id))
+        view = await service.mark(session, member.family_id, task_id, member.member_id)
+        if member.child_session_id:
+            await child_mode.record_event(
+                session, member.child_session_id, ChildEventType.TASK_MARKED, view.title
+            )
+        return _out(view)
 
     return await run_idempotent(session, member.member_id, key, f"mark:{task_id}", action)
 

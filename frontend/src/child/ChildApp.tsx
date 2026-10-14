@@ -4,6 +4,7 @@ import { api } from "../shared/api/endpoints";
 import { navigate, usePath } from "../shared/lib/router";
 import { useLoad } from "../shared/lib/useLoad";
 import { ChildContext } from "./context";
+import { track } from "./events";
 import { HandoverSheet } from "./HandoverSheet";
 import { BoardScreen } from "./screens/BoardScreen";
 import { BoughtScreen, DoneScreen } from "./screens/CelebrationScreens";
@@ -63,6 +64,9 @@ export function ChildApp() {
   const hide = useCallback((hidden: boolean) => setTabsHidden(hidden), []);
   // Баллы могли начислить с телефона взрослого, пока ребёнок ходил по экранам
   useEffect(refreshBalance, [path, refreshBalance]);
+  useEffect(() => {
+    if (path.startsWith("/kid")) track("screen_opened", path);
+  }, [path]);
 
   return (
     <ChildContext.Provider
@@ -74,11 +78,28 @@ export function ChildApp() {
         setTabsHidden: hide,
       }}
     >
-      <div className={`app ${tabsHidden ? "notabs" : ""}`} key={path}>
+      <div
+        className={`app ${tabsHidden ? "notabs" : ""}`}
+        key={path}
+        onClickCapture={(event) => {
+          const button = (event.target as HTMLElement).closest("button");
+          // Клавиши PIN не пишутся: по ним можно восстановить код
+          if (button && !button.closest("[data-secret]")) {
+            track("button_pressed", button.getAttribute("aria-label") ?? button.textContent);
+          }
+        }}
+      >
         <Screen screen={screen} id={id} tab={lastTab} />
       </div>
       {!tabsHidden && (
-        <nav className="tabs" aria-label="Разделы">
+        <nav
+          className="tabs"
+          aria-label="Разделы"
+          onClickCapture={(event) => {
+            const button = (event.target as HTMLElement).closest("button");
+            if (button) track("button_pressed", `Вкладка: ${button.textContent}`);
+          }}
+        >
           <div className="tabs-in">
             {TABS.map(([href, emoji, label]) => (
               <button

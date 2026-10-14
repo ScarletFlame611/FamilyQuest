@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ApiError, NetworkError } from "../../shared/api/client";
 import { api } from "../../shared/api/endpoints";
 import { useChild } from "../context";
+import { flushEvents } from "../events";
 import { SubHeader } from "../parts";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
@@ -30,6 +31,8 @@ export function PinScreen({ back }: { back: string }) {
   async function submit(code: string) {
     setBusy(true);
     try {
+      // События уходят до выхода: после правильного PIN детский токен перестанет действовать
+      await flushEvents();
       // При успехе сессия становится взрослой, и приложение само откроет экран взрослого
       await api.exitChildMode(code);
     } catch (reason) {
@@ -64,6 +67,7 @@ export function PinScreen({ back }: { back: string }) {
     if (!password || busy) return;
     setBusy(true);
     try {
+      await flushEvents();
       await api.exitChildModeWithPassword(password);
     } catch (reason) {
       setPassword("");
@@ -120,7 +124,7 @@ export function PinScreen({ back }: { back: string }) {
               ))}
             </div>
             <div className="err">{error}</div>
-            <div className="pad">
+            <div className="pad" data-secret>
               {KEYS.map((key, i) =>
                 key ? (
                   <button key={key} onClick={() => press(key)} aria-label={key === "⌫" ? "Стереть" : key}>

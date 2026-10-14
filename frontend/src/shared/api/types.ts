@@ -16,3 +16,6 @@ export type RewardIcon = Schemas["RewardIcon"];
 export type Purchase = Schemas["PurchaseOut"];
 export type Goal = Schemas["GoalOut"];
 export type GoalIcon = Schemas["GoalIcon"];
+export type ChildEventType = Schemas["ChildEventType"];
+export type ChildSession = Schemas["ChildSessionOut"];
+export type SessionEvents = Schemas["SessionEventsOut"];

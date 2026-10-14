@@ -1,12 +1,13 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.clock import now_utc
-from app.core.db import Base
+from app.core.db import Base, str_enum
 from app.core.ids import new_id
+from app.modules.child_mode.enums import ChildEventType
 
 
 class ChildSession(Base):
@@ -21,3 +22,15 @@ class ChildSession(Base):
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ChildEvent(Base):
+    __tablename__ = "child_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_id)
+    child_session_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("child_sessions.id", ondelete="CASCADE"), index=True
+    )
+    type: Mapped[ChildEventType] = mapped_column(str_enum(ChildEventType, "child_event_type"))
+    detail: Mapped[str | None] = mapped_column(String(200))
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
