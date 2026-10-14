@@ -6,6 +6,7 @@ import "../shared/styles/adult.css";
 
 const LINKS = [
   ["/", "Главная"],
+  ["/tasks", "Дела"],
   ["/tasks/new", "Новое дело"],
   ["/pin", "PIN-код"],
   ["/sessions", "Журнал"],

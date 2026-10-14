@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 
+import { AdultTasksScreen } from "./adult/AdultTasksScreen";
 import { ChildModeScreen } from "./adult/ChildModeScreen";
 import { HomeScreen } from "./adult/HomeScreen";
 import { LoginScreen } from "./adult/LoginScreen";
@@ -12,6 +13,7 @@ import { useSession } from "./shared/session/session";
 
 const ADULT_SCREENS: Record<string, () => JSX.Element> = {
   "/": HomeScreen,
+  "/tasks": AdultTasksScreen,
   "/tasks/new": NewTaskScreen,
   "/pin": PinScreen,
   "/child-mode": ChildModeScreen,
