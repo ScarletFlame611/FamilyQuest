@@ -31,7 +31,9 @@ pytest:
     - pip install --no-cache-dir -r requirements-dev.txt
     - alembic upgrade head
     - alembic check
-    - pytest
+    # Проверки рисков отдельным шагом: их провал виден в пайплайне сразу
+    - pytest -m risk
+    - pytest -m "not risk"
 
 typecheck:
   stage: test
