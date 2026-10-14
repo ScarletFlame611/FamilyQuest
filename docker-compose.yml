@@ -34,6 +34,10 @@ services:
     command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
     environment:
       VITE_API_PROXY: http://backend:8000
+      # Пусто, если интернет без прокси; иначе адрес прокси, видимый из контейнера
+      HTTP_PROXY: ${BUILD_PROXY:-}
+      HTTPS_PROXY: ${BUILD_PROXY:-}
+      NO_PROXY: backend,localhost
       OPENAPI_URL: http://backend:8000/api/openapi.json
     volumes:
       - ./frontend:/app
