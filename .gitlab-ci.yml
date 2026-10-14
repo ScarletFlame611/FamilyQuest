@@ -40,3 +40,4 @@ typecheck:
     - cd frontend
     - npm ci
     - npm run typecheck
+    - npm test

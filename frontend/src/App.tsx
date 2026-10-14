@@ -1,23 +1,41 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
-import type { components } from "./shared/api/schema";
+import { ChildModeScreen } from "./adult/ChildModeScreen";
+import { HomeScreen } from "./adult/HomeScreen";
+import { LoginScreen } from "./adult/LoginScreen";
+import { NewTaskScreen } from "./adult/NewTaskScreen";
+import { PinScreen } from "./adult/PinScreen";
+import { ChildApp } from "./child/ChildApp";
+import { navigate, usePath } from "./shared/lib/router";
+import { useSession } from "./shared/session/session";
 
-type Health = components["schemas"]["HealthOut"];
+const ADULT_SCREENS: Record<string, () => JSX.Element> = {
+  "/": HomeScreen,
+  "/tasks/new": NewTaskScreen,
+  "/pin": PinScreen,
+  "/child-mode": ChildModeScreen,
+};
+
+function homeOf(role: "adult" | "child" | null): string {
+  if (role === "child") return "/kid";
+  return role === "adult" ? "/" : "/login";
+}
 
 export function App() {
-  const [health, setHealth] = useState<Health["status"] | "loading">("loading");
+  const session = useSession();
+  const path = usePath();
+  const role = session?.role ?? null;
+  // Адрес из строки браузера ничего не решает: детская сессия всегда остаётся
+  // в детском режиме, а взрослый экран открывается только с токеном взрослого
+  const allowed =
+    role === "child" ? path.startsWith("/kid") : role === "adult" ? path in ADULT_SCREENS : path === "/login";
 
   useEffect(() => {
-    fetch("/api/health")
-      .then((response) => response.json() as Promise<Health>)
-      .then((body) => setHealth(body.status))
-      .catch(() => setHealth("unavailable"));
-  }, []);
+    if (!allowed) navigate(homeOf(role), { replace: true });
+  }, [allowed, role]);
 
-  return (
-    <main style={{ maxWidth: 440, margin: "0 auto", padding: 16 }}>
-      <h1 style={{ fontFamily: "var(--head)" }}>FamilyQuest</h1>
-      <p>Сервер: {health === "ok" ? "работает" : health === "loading" ? "проверяем…" : "недоступен"}</p>
-    </main>
-  );
+  if (role === "child") return <ChildApp />;
+  if (role === null) return <LoginScreen />;
+  const Screen = ADULT_SCREENS[path] ?? HomeScreen;
+  return <Screen />;
 }

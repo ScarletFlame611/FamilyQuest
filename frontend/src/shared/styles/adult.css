@@ -1,0 +1,25 @@
+/* Взрослая часть собрана из тех же токенов, что и детский режим, но плотнее:
+   взрослый читает, ему не нужны крупные плитки на весь экран. */
+.adult { user-select: text; }
+.adult .hd { justify-content: space-between; }
+.adult .hd b { font-family: var(--head); font-size: 20px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.nav button { min-height: 44px; padding: 0 14px; border-radius: 999px; background: var(--card); border: 1.5px solid var(--line); color: var(--muted); font-size: 14px; font-weight: 800; }
+.nav button.on { background: var(--violet-soft); border-color: var(--violet-soft); color: var(--violet-dark); }
+.btn:disabled, .cta:disabled { opacity: .6; cursor: default; }
+.btn.green { background: var(--green); }
+.btn.soft { background: var(--violet-soft); color: var(--violet-dark); }
+.row .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.row.wrap { flex-wrap: wrap; }
+.field { display: grid; gap: 6px; font-size: 15px; font-weight: 800; }
+.field small { color: var(--muted); font-weight: 600; }
+.icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; }
+.icons button { display: grid; justify-items: center; gap: 4px; padding: 8px 4px; border-radius: 18px; border: 2px solid transparent; font-size: 12px; color: var(--muted); }
+.icons button .tile { width: 52px; height: 52px; font-size: 30px; border-radius: 16px; }
+.icons button.on { border-color: var(--violet); background: var(--violet-soft); color: var(--violet-dark); }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choices button { min-height: 48px; padding: 0 14px; border-radius: 999px; background: var(--bg); border: 2px solid var(--line); font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+.choices button.on { border-color: var(--violet); background: var(--violet-soft); color: var(--violet-dark); }
+.pass.small { min-height: 44px; font-size: 16px; }
+.err:empty { display: none; }
+.adult .cta, .sheet-card .cta { font-size: 20px; min-height: 64px; }

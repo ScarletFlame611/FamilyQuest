@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "gen:api": "openapi-typescript ${OPENAPI_URL:-http://localhost:8000/api/openapi.json} -o src/shared/api/schema.d.ts"
+    "gen:api": "openapi-typescript ${OPENAPI_URL:-http://localhost:8000/api/openapi.json} -o src/shared/api/schema.d.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "react": "18.3.1",
@@ -19,8 +20,10 @@
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.4",
+    "jsdom": "25.0.1",
     "openapi-typescript": "7.4.4",
     "typescript": "5.6.3",
-    "vite": "5.4.11"
+    "vite": "5.4.11",
+    "vitest": "2.1.8"
   }
 }
