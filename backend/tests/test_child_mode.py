@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.families import service as families
 from app.modules.users import service as users
 from app.seed import DEMO_PIN, MAMA_EMAIL, DemoFamily
+from tests.api import warm_pool
 from tests.factories import MAMA_PASSWORD, PAPA_PASSWORD
 
 pytestmark = pytest.mark.anyio
@@ -187,6 +188,7 @@ async def test_five_wrong_pins_lock_until_password(client: AsyncClient, demo: De
 async def test_parallel_guessing_cannot_exceed_five_attempts(client: AsyncClient, demo: DemoFamily):
     child = await start_child_mode(client, demo)
     guesses = [f"{n:04d}" for n in range(1000, 1012) if f"{n:04d}" != DEMO_PIN]
+    await warm_pool(client, child["access_token"])
     responses = await asyncio.gather(*(exit_pin(client, child, pin) for pin in guesses))
     codes = sorted(r.status_code for r in responses)
     assert codes.count(401) == 4

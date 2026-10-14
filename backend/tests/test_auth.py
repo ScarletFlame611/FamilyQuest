@@ -13,6 +13,7 @@ from app.modules.families import service as families
 from app.modules.families.enums import MemberRole
 from app.modules.rewards import service as rewards
 from app.modules.tasks import service as tasks
+from app.modules.tasks.enums import TaskIcon
 from app.modules.users import service as users
 from app.seed import MAMA_EMAIL, DemoFamily
 from tests.factories import MAMA_PASSWORD
@@ -101,15 +102,15 @@ async def test_other_family_objects_are_not_found(
     other_user = await users.create_user(session, "sosed@familyquest.local", "secret-pass", "Сосед")
     other_adult = await families.add_adult(session, other_family, other_user, "Сосед", "man")
     other_child = await families.add_child(session, other_family, "Ваня", "panda")
-    other_task = await tasks.create_task(
-        session, other_family, other_adult, "Чужое дело", "toys", 5, other_child
+    other_task_view = await tasks.create_task(
+        session, other_family, other_adult, "Чужое дело", TaskIcon.TOYS, 5, other_child
     )
     other_reward = await rewards.create_reward(session, other_family, "Чужая награда", "park", 10)
     await session.commit()
 
     token = (await login(client)).json()["access_token"]
     for path in (
-        f"/api/tasks/{other_task}",
+        f"/api/tasks/{other_task_view.id}",
         f"/api/family/members/{other_child}",
         f"/api/rewards/{other_reward}",
         f"/api/tasks/{uuid.uuid4()}",  # noqa: TID251 — случайный несуществующий id

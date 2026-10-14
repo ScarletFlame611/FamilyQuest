@@ -12,6 +12,7 @@ from app.modules.goals import service as goals
 from app.modules.ledger import service as ledger
 from app.modules.rewards import service as rewards
 from app.modules.tasks import service as tasks
+from app.modules.tasks.enums import TaskIcon
 from app.modules.users import service as users
 
 MAMA_EMAIL = "mama@familyquest.local"
@@ -62,34 +63,34 @@ async def seed_demo_family(
     # Вклады в цель: Мама 110, Папа 85, Маша 35, Петя 30 — всего 260 из 300.
     # Последние три строки идут в ленту копилки первыми.
     history = [
-        (mama, mama, "Постирать бельё", "laundry", 20),
-        (papa, papa, "Починить кран", "tools", 30),
-        (petya, mama, "Убрать игрушки", "toys", 10),
-        (mama, mama, "Сходить в магазин", "shopping", 25),
-        (papa, papa, "Вынести мусор", "trash", 10),
-        (petya, mama, "Покормить кота", "cat", 5),
-        (mama, mama, "Помыть полы", "mop", 25),
-        (papa, papa, "Пропылесосить ковёр", "vacuum", 20),
-        (petya, papa, "Полить цветы", "plant", 5),
-        (mama, mama, "Погладить одежду", "iron", 20),
-        (papa, papa, "Разобрать посуду", "dishes", 10),
-        (petya, mama, "Пропылесосить", "vacuum", 10),
-        (mama, mama, "Приготовить ужин", "cooking", 20),
-        (papa, papa, "Помыть посуду", "dishes", 15),
+        (mama, mama, "Постирать бельё", TaskIcon.LAUNDRY, 20),
+        (papa, papa, "Починить кран", TaskIcon.TOOLS, 30),
+        (petya, mama, "Убрать игрушки", TaskIcon.TOYS, 10),
+        (mama, mama, "Сходить в магазин", TaskIcon.SHOPPING, 25),
+        (papa, papa, "Вынести мусор", TaskIcon.TRASH, 10),
+        (petya, mama, "Покормить кота", TaskIcon.CAT, 5),
+        (mama, mama, "Помыть полы", TaskIcon.MOP, 25),
+        (papa, papa, "Пропылесосить ковёр", TaskIcon.VACUUM, 20),
+        (petya, papa, "Полить цветы", TaskIcon.PLANT, 5),
+        (mama, mama, "Погладить одежду", TaskIcon.IRON, 20),
+        (papa, papa, "Разобрать посуду", TaskIcon.DISHES, 10),
+        (petya, mama, "Пропылесосить", TaskIcon.VACUUM, 10),
+        (mama, mama, "Приготовить ужин", TaskIcon.COOKING, 20),
+        (papa, papa, "Помыть посуду", TaskIcon.DISHES, 15),
     ]
     for assignee, author, title, icon, points in history:
         await tasks.record_completed_task(session, family_id, author, assignee, title, icon, points)
 
     for title, icon, points in [
-        ("Убрать игрушки", "toys", 10),
-        ("Покормить кота", "cat", 5),
-        ("Полить цветы", "plant", 5),
+        ("Убрать игрушки", TaskIcon.TOYS, 10),
+        ("Покормить кота", TaskIcon.CAT, 5),
+        ("Полить цветы", TaskIcon.PLANT, 5),
     ]:
         await tasks.create_task(session, family_id, mama, title, icon, points, masha)
     for author, title, icon, points in [
-        (papa, "Вынести мусор", "trash", 10),
-        (mama, "Разобрать посуду", "dishes", 10),
-        (mama, "Сложить носки", "socks", 5),
+        (papa, "Вынести мусор", TaskIcon.TRASH, 10),
+        (mama, "Разобрать посуду", TaskIcon.DISHES, 10),
+        (mama, "Сложить носки", TaskIcon.SOCKS, 5),
     ]:
         await tasks.create_task(session, family_id, author, title, icon, points, None)
 
