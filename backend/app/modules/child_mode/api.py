@@ -1,5 +1,3 @@
-import csv
-import io
 import uuid
 from dataclasses import asdict
 
@@ -109,22 +107,9 @@ async def session_events_csv(
     session_id: uuid.UUID, adult: AdultDep, session: SessionDep
 ) -> Response:
     view, events = await service.session_events(session, adult.family_id, session_id)
-    buffer = io.StringIO()
-    writer = csv.writer(buffer)
-    writer.writerow(["seconds_from_start", "type", "detail", "occurred_at"])
-    for event in events:
-        writer.writerow(
-            [
-                event.seconds_from_start,
-                event.type,
-                event.detail or "",
-                event.occurred_at.isoformat(),
-            ]
-        )
     filename = f"child-session-{view.started_at:%Y%m%d-%H%M%S}.csv"
-    # BOM нужен, чтобы Excel открыл кириллицу без ручного выбора кодировки
     return Response(
-        "\ufeff" + buffer.getvalue(),
+        service.events_csv(events),
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

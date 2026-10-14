@@ -17,8 +17,11 @@ services:
     build: ./backend
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     env_file: .env
+    environment:
+      EXPORTS_DIR: /exports
     volumes:
       - ./backend:/app
+      - ./exports:/exports
     ports:
       - "8000:8000"
     depends_on:

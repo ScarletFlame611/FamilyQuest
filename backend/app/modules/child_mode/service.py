@@ -1,3 +1,5 @@
+import csv
+import io
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -239,3 +241,20 @@ async def session_events(
         )
         for event in events
     ]
+
+
+def events_csv(events: list[EventView]) -> str:
+    """Собирает CSV журнала сессии; BOM нужен, чтобы Excel открыл кириллицу сразу."""
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["seconds_from_start", "type", "detail", "occurred_at"])
+    for event in events:
+        writer.writerow(
+            [
+                event.seconds_from_start,
+                event.type,
+                event.detail or "",
+                event.occurred_at.isoformat(),
+            ]
+        )
+    return "\ufeff" + buffer.getvalue()

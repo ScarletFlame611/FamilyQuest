@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     demo_mama_password: SecretStr | None = None
     demo_papa_password: SecretStr | None = None
     load_password: SecretStr | None = None
+    # Куда сид сохраняет журналы детских сессий перед пересозданием демо-семьи
+    exports_dir: str = "exports"
 
 
 @lru_cache

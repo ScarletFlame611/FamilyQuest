@@ -7,10 +7,12 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import now_utc
+from app.core.config import get_settings
 from app.modules.families import service as families
 from app.modules.users import service as users
 from app.seed import DEMO_PIN, DemoFamily
 from tests.api import adult_token, bearer, child_token
+from tests.factories import seed
 
 pytestmark = pytest.mark.anyio
 
@@ -119,3 +121,24 @@ async def test_events_are_only_for_own_family_adults(
     foreign = await client.get(f"/api/child-mode/sessions/{session_id}/events", headers=stranger)
     assert foreign.status_code == 404
     assert (await client.get("/api/child-mode/sessions", headers=stranger)).json() == []
+
+
+async def test_reseed_saves_child_journals_first(
+    client: AsyncClient,
+    session: AsyncSession,
+    demo: DemoFamily,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setattr(get_settings(), "exports_dir", str(tmp_path))
+    masha = await child_token(client, demo.masha_id)
+    await client.post(
+        "/api/child-mode/events",
+        json={"events": [{"type": "screen_opened", "detail": "/kid", "ago_ms": 0}]},
+        headers=bearer(masha),
+    )
+    await seed(session)
+    files = list(tmp_path.glob("*.csv"))
+    assert len(files) == 1
+    assert "Маша" in files[0].name
+    assert "screen_opened" in files[0].read_text(encoding="utf-8")

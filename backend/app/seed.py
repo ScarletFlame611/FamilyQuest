@@ -2,11 +2,13 @@ import asyncio
 import sys
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.db import session_factory
+from app.modules.child_mode import service as child_mode
 from app.modules.families import service as families
 from app.modules.goals import service as goals
 from app.modules.goals.enums import GoalIcon
@@ -31,6 +33,24 @@ class DemoFamily:
     petya_id: uuid.UUID
 
 
+# Перед пересозданием семьи журналы её детских сессий сохраняются в файлы,
+# чтобы результаты предыдущего ребёнка в тесте не пропали
+async def export_child_sessions(session: AsyncSession, family_id: uuid.UUID) -> list[Path]:
+    directory = Path(get_settings().exports_dir)
+    saved = []
+    for view in await child_mode.list_sessions(session, family_id):
+        _, events = await child_mode.session_events(session, family_id, view.id)
+        if not events:
+            continue
+        directory.mkdir(parents=True, exist_ok=True)
+        path = (
+            directory / f"{view.started_at:%Y%m%d-%H%M%S}-{view.child_name}-{view.id.hex[:8]}.csv"
+        )
+        path.write_text(child_mode.events_csv(events), encoding="utf-8")
+        saved.append(path)
+    return saved
+
+
 async def remove_demo_family(session: AsyncSession) -> None:
     user_ids = [
         user_id
@@ -40,6 +60,8 @@ async def remove_demo_family(session: AsyncSession) -> None:
     for user_id in user_ids:
         family_id = await families.find_family_id_by_user(session, user_id)
         if family_id:
+            for path in await export_child_sessions(session, family_id):
+                print(f"Журнал сохранён: {path}")
             await families.delete_family(session, family_id)
     await users.delete_users(session, user_ids)
 

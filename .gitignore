@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+!.env.prod.example
 
 design/
 exports/
@@ -15,3 +16,4 @@ node_modules/
 dist/
 *.tsbuildinfo
 loadtest/results/
+deploy/certs/
