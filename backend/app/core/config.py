@@ -20,6 +20,7 @@ class Settings(BaseSettings):
 
     demo_mama_password: SecretStr | None = None
     demo_papa_password: SecretStr | None = None
+    load_password: SecretStr | None = None
 
 
 @lru_cache

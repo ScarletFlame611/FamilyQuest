@@ -3,11 +3,12 @@ from dataclasses import dataclass
 from datetime import datetime, time
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import or_, select
+from sqlalchemy import insert, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import now_utc
 from app.core.errors import ConflictError, NotFoundError
+from app.core.ids import new_id
 from app.modules.families import service as families
 from app.modules.families.enums import MemberRole
 from app.modules.ledger import service as ledger
@@ -268,3 +269,30 @@ async def task_titles(
         select(Task.id, Task.title).where(Task.family_id == family_id, Task.id.in_(task_ids))
     )
     return {row.id: row.title for row in rows}
+
+
+async def create_assigned_tasks(
+    session: AsyncSession,
+    family_id: uuid.UUID,
+    created_by_member_id: uuid.UUID,
+    assignee_member_id: uuid.UUID,
+    tasks: list[tuple[str, TaskIcon, int]],
+) -> None:
+    """Создаёт пачку назначенных дел одной вставкой, для подготовки нагрузочных данных."""
+    await session.execute(
+        insert(Task),
+        [
+            {
+                "id": new_id(),
+                "family_id": family_id,
+                "created_by_member_id": created_by_member_id,
+                "assignee_member_id": assignee_member_id,
+                "title": title,
+                "icon": TaskIcon(icon),
+                "points": points,
+                "status": TaskStatus.ASSIGNED,
+                "created_at": now_utc(),
+            }
+            for title, icon, points in tasks
+        ],
+    )

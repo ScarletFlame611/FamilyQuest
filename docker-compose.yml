@@ -40,6 +40,20 @@ services:
     depends_on:
       - backend
 
+  locust:
+    image: locustio/locust:2.32.4
+    profiles: ["loadtest"]
+    working_dir: /mnt/locust
+    volumes:
+      - ./loadtest:/mnt/locust
+    command: >
+      -f locustfile.py --host http://backend:8000 --headless
+      --csv results/locust --html results/report.html --only-summary
+      --load-password ${LOAD_PASSWORD} --load-families ${LOAD_FAMILIES:-400}
+      --step-users ${STEP_USERS:-20} --step-seconds ${STEP_SECONDS:-30}
+    depends_on:
+      - backend
+
 volumes:
   db-data:
   frontend-modules:
