@@ -75,8 +75,8 @@ async def test_secrets_are_stored_only_as_argon2_hashes(session: AsyncSession):
     pin_hash = await session.scalar(select(Family.pin_hash).where(Family.id == demo.family_id))
     assert pin_hash is not None
     assert all(h.startswith("$argon2id$") for h in [*hashes, pin_hash])
-    assert any(verify_secret(h, MAMA_PASSWORD) for h in hashes)
-    assert verify_secret(pin_hash, DEMO_PIN)
+    assert [h for h in hashes if await verify_secret(h, MAMA_PASSWORD)]
+    assert await verify_secret(pin_hash, DEMO_PIN)
     assert MAMA_PASSWORD not in hashes
     assert DEMO_PIN not in pin_hash
 

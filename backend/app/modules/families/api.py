@@ -1,10 +1,12 @@
 import uuid
 
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 
-from app.deps import MemberDep, SessionDep
+from app.core.errors import InvalidInputError, TooManyAttemptsError
+from app.deps import AdultDep, MemberDep, SessionDep
 from app.modules.families import service
-from app.modules.families.schemas import FamilyBriefOut, FamilyOut, MemberOut, MeOut
+from app.modules.families.schemas import FamilyBriefOut, FamilyOut, MemberOut, MeOut, SetPinIn
+from app.modules.users import service as users
 
 router = APIRouter(prefix="/api", tags=["family"])
 
@@ -37,3 +39,16 @@ async def family(member: MemberDep, session: SessionDep) -> FamilyOut:
 async def family_member(member_id: uuid.UUID, member: MemberDep, session: SessionDep) -> MemberOut:
     info = await service.get_member(session, member.family_id, member_id)
     return MemberOut(id=info.id, name=info.name, role=info.role, avatar=info.avatar)
+
+
+@router.put("/family/pin", status_code=status.HTTP_204_NO_CONTENT)
+async def set_pin(body: SetPinIn, adult: AdultDep, session: SessionDep) -> None:
+    user_id = await service.get_adult_user_id(session, adult.family_id, adult.member_id)
+    try:
+        await users.check_password(session, user_id, body.current_password)
+    except (InvalidInputError, TooManyAttemptsError):
+        # Неудачная попытка пароля считается так же, как при входе
+        await session.commit()
+        raise
+    await service.set_pin(session, adult.family_id, body.pin)
+    await session.commit()

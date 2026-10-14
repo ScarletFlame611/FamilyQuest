@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.modules.families.enums import MemberRole
 
@@ -23,3 +23,8 @@ class MeOut(MemberOut):
 
 class FamilyOut(FamilyBriefOut):
     members: list[MemberOut]
+
+
+class SetPinIn(BaseModel):
+    current_password: str = Field(max_length=200)
+    pin: str = Field(max_length=8)

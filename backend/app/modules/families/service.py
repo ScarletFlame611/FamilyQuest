@@ -5,8 +5,13 @@ from itertools import pairwise
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import InvalidInputError, NotFoundError
-from app.core.security import hash_secret
+from app.core.errors import (
+    InvalidInputError,
+    NotFoundError,
+    TooManyAttemptsError,
+    UnauthorizedError,
+)
+from app.core.security import hash_secret, verify_secret
 from app.modules.families.enums import MemberRole
 from app.modules.families.models import Family, Member
 from app.modules.ledger import service as ledger
@@ -45,6 +50,17 @@ class WeakPinError(InvalidInputError):
     pass
 
 
+class WrongPinError(UnauthorizedError):
+    pass
+
+
+class PinLockedError(TooManyAttemptsError):
+    pass
+
+
+MAX_PIN_ATTEMPTS = 5
+
+
 def _is_weak_pin(pin: str) -> bool:
     if len(set(pin)) == 1:
         return True
@@ -71,7 +87,7 @@ async def set_pin(session: AsyncSession, family_id: uuid.UUID, pin: str) -> None
             "и цифры подряд, например 1111 или 1234"
         )
     family = await session.get_one(Family, family_id)
-    family.pin_hash = hash_secret(pin)
+    family.pin_hash = await hash_secret(pin)
     family.pin_failed_attempts = 0
     family.pin_locked = False
     await session.flush()
@@ -150,3 +166,49 @@ async def list_members(session: AsyncSession, family_id: uuid.UUID) -> list[Memb
         select(Member).where(Member.family_id == family_id).order_by(Member.role, Member.created_at)
     )
     return [_info(member) for member in members]
+
+
+async def get_adult_user_id(
+    session: AsyncSession, family_id: uuid.UUID, member_id: uuid.UUID
+) -> uuid.UUID:
+    """Возвращает аккаунт взрослого участника своей семьи."""
+    user_id = await session.scalar(
+        select(Member.user_id).where(
+            Member.id == member_id,
+            Member.family_id == family_id,
+            Member.role == MemberRole.ADULT,
+        )
+    )
+    if user_id is None:
+        raise MemberNotFoundError("Участник не найден")
+    return user_id
+
+
+async def has_pin(session: AsyncSession, family_id: uuid.UUID) -> bool:
+    """Проверяет, задан ли в семье PIN детского режима."""
+    pin_hash = await session.scalar(select(Family.pin_hash).where(Family.id == family_id))
+    return pin_hash is not None
+
+
+async def check_pin(session: AsyncSession, family_id: uuid.UUID, pin: str) -> None:
+    """Проверяет PIN под блокировкой семьи; после 5 неудач подряд PIN закрывается."""
+    # Блокировка строки семьи не даёт обойти лимит параллельными запросами
+    family = await session.scalar(select(Family).where(Family.id == family_id).with_for_update())
+    if family is None or family.pin_hash is None or family.pin_locked:
+        raise PinLockedError("Вход по PIN-коду закрыт. Нужен пароль взрослого")
+    if await verify_secret(family.pin_hash, pin):
+        family.pin_failed_attempts = 0
+        return
+    family.pin_failed_attempts += 1
+    if family.pin_failed_attempts >= MAX_PIN_ATTEMPTS:
+        family.pin_locked = True
+        raise PinLockedError("PIN-код введён неверно 5 раз. Нужен пароль взрослого")
+    left = MAX_PIN_ATTEMPTS - family.pin_failed_attempts
+    raise WrongPinError("Неверный PIN-код", extra={"attempts_left": left})
+
+
+async def unlock_pin(session: AsyncSession, family_id: uuid.UUID) -> None:
+    """Снимает блокировку PIN после входа по паролю взрослого."""
+    family = await session.get_one(Family, family_id, with_for_update=True)
+    family.pin_failed_attempts = 0
+    family.pin_locked = False

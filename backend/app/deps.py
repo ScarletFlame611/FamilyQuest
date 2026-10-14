@@ -57,11 +57,18 @@ async def require_adult(member: MemberDep) -> CurrentMember:
     return member
 
 
-async def require_child(member: MemberDep) -> CurrentMember:
-    if member.role is not MemberRole.CHILD:
+@dataclass(frozen=True)
+class CurrentChild:
+    member_id: uuid.UUID
+    family_id: uuid.UUID
+    child_session_id: uuid.UUID
+
+
+async def require_child(member: MemberDep) -> CurrentChild:
+    if member.role is not MemberRole.CHILD or member.child_session_id is None:
         raise ForbiddenError("Это действие доступно только в детском режиме")
-    return member
+    return CurrentChild(member.member_id, member.family_id, member.child_session_id)
 
 
 AdultDep = Annotated[CurrentMember, Depends(require_adult)]
-ChildDep = Annotated[CurrentMember, Depends(require_child)]
+ChildDep = Annotated[CurrentChild, Depends(require_child)]

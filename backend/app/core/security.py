@@ -4,6 +4,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import timedelta
 
+import anyio.to_thread
 import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
@@ -14,15 +15,20 @@ from app.core.config import get_settings
 _hasher = PasswordHasher()
 
 
-def hash_secret(secret: str) -> str:
-    return _hasher.hash(secret)
-
-
-def verify_secret(secret_hash: str, secret: str) -> bool:
+def _verify_sync(secret_hash: str, secret: str) -> bool:
     try:
         return _hasher.verify(secret_hash, secret)
     except (VerificationError, InvalidHashError):
         return False
+
+
+# argon2 нарочно медленный; в потоке он не останавливает обработку других запросов
+async def hash_secret(secret: str) -> str:
+    return await anyio.to_thread.run_sync(_hasher.hash, secret)
+
+
+async def verify_secret(secret_hash: str, secret: str) -> bool:
+    return await anyio.to_thread.run_sync(_verify_sync, secret_hash, secret)
 
 
 @dataclass(frozen=True)
