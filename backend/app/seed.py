@@ -59,7 +59,20 @@ async def seed_demo_family(
     await goals.create_goal(session, family_id, "Поход с палатками всей семьёй", "tent", 300)
 
     await ledger.accrue(session, masha, 35, note="Стартовые баллы")
+    # Вклады в цель: Мама 110, Папа 85, Маша 35, Петя 30 — всего 260 из 300.
+    # Последние три строки идут в ленту копилки первыми.
     history = [
+        (mama, mama, "Постирать бельё", "laundry", 20),
+        (papa, papa, "Починить кран", "tools", 30),
+        (petya, mama, "Убрать игрушки", "toys", 10),
+        (mama, mama, "Сходить в магазин", "shopping", 25),
+        (papa, papa, "Вынести мусор", "trash", 10),
+        (petya, mama, "Покормить кота", "cat", 5),
+        (mama, mama, "Помыть полы", "mop", 25),
+        (papa, papa, "Пропылесосить ковёр", "vacuum", 20),
+        (petya, papa, "Полить цветы", "plant", 5),
+        (mama, mama, "Погладить одежду", "iron", 20),
+        (papa, papa, "Разобрать посуду", "dishes", 10),
         (petya, mama, "Пропылесосить", "vacuum", 10),
         (mama, mama, "Приготовить ужин", "cooking", 20),
         (papa, papa, "Помыть посуду", "dishes", 15),

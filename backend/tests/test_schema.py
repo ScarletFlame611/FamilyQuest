@@ -100,3 +100,13 @@ async def test_weak_or_malformed_pin_is_rejected(session: AsyncSession, pin: str
     demo = await seed(session)
     with pytest.raises(families.InvalidInputError):
         await families.set_pin(session, demo.family_id, pin)
+
+
+async def test_seed_history_fills_goal_to_260(session: AsyncSession):
+    demo = await seed(session)
+    earned = {
+        member: (await ledger.get_balance(session, member)).balance
+        for member in (demo.mama_id, demo.papa_id, demo.masha_id, demo.petya_id)
+    }
+    assert list(earned.values()) == [110, 85, 35, 30]
+    assert sum(earned.values()) == 260
