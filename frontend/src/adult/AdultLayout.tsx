@@ -7,15 +7,16 @@ import "../shared/styles/adult.css";
 const LINKS = [
   ["/", "Главная"],
   ["/tasks", "Дела"],
+  ["/kanban", "Все дела"],
   ["/tasks/new", "Новое дело"],
   ["/pin", "PIN-код"],
   ["/sessions", "Журнал"],
 ] as const;
 
-export function AdultLayout({ children }: { children: ReactNode }) {
+export function AdultLayout({ children, wide }: { children: ReactNode; wide?: boolean }) {
   const path = usePath();
   return (
-    <div className="app notabs adult">
+    <div className={`app notabs adult ${wide ? "wide" : ""}`}>
       <header className="hd">
         <b>FamilyQuest</b>
         <button className="grown" onClick={() => void api.logout()}>

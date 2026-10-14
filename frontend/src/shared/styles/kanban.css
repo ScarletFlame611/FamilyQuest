@@ -1,0 +1,21 @@
+/* На телефоне колонки листаются вбок внутри доски, страница при этом не прокручивается
+   по горизонтали; на широком экране все четыре колонки стоят рядом. */
+.app.wide { max-width: 1120px; }
+.kanban { display: grid; grid-auto-flow: column; grid-auto-columns: 86%; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; padding-bottom: 6px; }
+.kcol { scroll-snap-align: start; background: var(--violet-soft); border-radius: 22px; padding: 12px; display: grid; gap: 8px; align-content: start; min-height: 120px; }
+.kcol h2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: var(--head); font-size: 17px; padding: 2px 4px 4px; }
+.kcol h2 .chip { height: 28px; font-size: 14px; background: var(--card); color: var(--violet-dark); }
+.kcard { display: grid; grid-template-columns: 52px 1fr; gap: 10px; align-items: center; background: var(--card); border-radius: 18px; padding: 10px; box-shadow: 0 2px 0 var(--line); }
+.kcard .tile { width: 52px; height: 52px; font-size: 30px; border-radius: 16px; }
+.kcard .ktitle { font-size: 16px; font-weight: 800; line-height: 1.25; }
+.kcard .kmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; font-size: 13px; color: var(--muted); font-weight: 700; }
+.kcard .kmeta .chip { height: 28px; font-size: 14px; padding: 0 10px; }
+.kcard .kact { grid-column: 1 / -1; min-height: 48px; border-radius: 14px; font-size: 17px; font-weight: 900; color: #fff; background: var(--green); box-shadow: 0 3px 0 var(--green-dark); }
+.kcard .kact.violet { background: var(--violet); box-shadow: 0 3px 0 var(--violet-dark); }
+.kcard .kact:disabled { opacity: .6; }
+.kcard .err { grid-column: 1 / -1; }
+.kcard.done { box-shadow: none; background: transparent; border: 1.5px dashed var(--line); }
+.kempty { font-size: 14px; color: var(--muted); font-weight: 700; padding: 4px; }
+@media (min-width: 900px) {
+  .kanban { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); overflow: visible; }
+}

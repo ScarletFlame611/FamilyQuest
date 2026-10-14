@@ -9,6 +9,7 @@ import { HandoverSheet } from "./HandoverSheet";
 import { BoardScreen } from "./screens/BoardScreen";
 import { BoughtScreen, DoneScreen } from "./screens/CelebrationScreens";
 import { GoalScreen } from "./screens/GoalScreen";
+import { KanbanScreen } from "./screens/KanbanScreen";
 import { PinScreen } from "./screens/PinScreen";
 import { RewardScreen, ShopScreen } from "./screens/ShopScreens";
 import { TaskScreen } from "./screens/TaskScreen";
@@ -19,12 +20,14 @@ const TABS = [
   ["/kid/board", "🙋", "Можно взять"],
   ["/kid/shop", "🎁", "Награды"],
   ["/kid/goal", "🐷", "Копилка"],
+  ["/kid/kanban", "🗂️", "Все дела"],
 ] as const;
 
 function tabOf(screen: string): string {
   if (screen === "board") return "/kid/board";
   if (screen === "shop" || screen === "reward" || screen === "bought") return "/kid/shop";
   if (screen === "goal") return "/kid/goal";
+  if (screen === "kanban") return "/kid/kanban";
   return "/kid";
 }
 
@@ -44,6 +47,8 @@ function Screen({ screen, id, tab }: { screen: string; id: string; tab: string }
       return <BoughtScreen key={id} id={id} />;
     case "goal":
       return <GoalScreen />;
+    case "kanban":
+      return <KanbanScreen />;
     case "pin":
       return <PinScreen back={tab} />;
     default:
@@ -79,7 +84,7 @@ export function ChildApp() {
       }}
     >
       <div
-        className={`app ${tabsHidden ? "notabs" : ""}`}
+        className={`app ${tabsHidden ? "notabs" : ""} ${screen === "kanban" ? "wide" : ""}`}
         key={path}
         onClickCapture={(event) => {
           const button = (event.target as HTMLElement).closest("button");
@@ -100,7 +105,7 @@ export function ChildApp() {
             if (button) track("button_pressed", `Вкладка: ${button.textContent}`);
           }}
         >
-          <div className="tabs-in">
+          <div className="tabs-in" style={{ gridTemplateColumns: `repeat(${TABS.length}, 1fr)` }}>
             {TABS.map(([href, emoji, label]) => (
               <button
                 key={href}

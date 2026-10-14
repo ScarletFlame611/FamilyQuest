@@ -45,6 +45,11 @@ async def my_tasks(member: MemberDep, session: SessionDep) -> list[TaskOut]:
     return [_out(view) for view in views]
 
 
+@router.get("/family")
+async def family_tasks(member: MemberDep, session: SessionDep) -> list[TaskOut]:
+    return [_out(view) for view in await service.list_family_tasks(session, member.family_id)]
+
+
 @router.get("/board")
 async def board(member: MemberDep, session: SessionDep) -> list[TaskOut]:
     return [_out(view) for view in await service.list_board(session, member.family_id)]

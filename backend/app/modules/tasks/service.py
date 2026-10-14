@@ -163,14 +163,18 @@ async def get_task(session: AsyncSession, family_id: uuid.UUID, task_id: uuid.UU
     return await _view(session, family_id, task)
 
 
+async def _family_day_start(session: AsyncSession, family_id: uuid.UUID) -> datetime:
+    family = await families.get_family(session, family_id)
+    # «Сегодня» считается в часовом поясе семьи, а не сервера
+    zone = ZoneInfo(family.timezone)
+    return datetime.combine(now_utc().astimezone(zone).date(), time.min, tzinfo=zone)
+
+
 async def list_my_tasks(
     session: AsyncSession, family_id: uuid.UUID, member_id: uuid.UUID
 ) -> list[TaskView]:
     """Возвращает дела участника: сначала невыполненные, потом засчитанные сегодня."""
-    family = await families.get_family(session, family_id)
-    # «Сегодня» считается в часовом поясе семьи, а не сервера
-    zone = ZoneInfo(family.timezone)
-    day_start = datetime.combine(now_utc().astimezone(zone).date(), time.min, tzinfo=zone)
+    day_start = await _family_day_start(session, family_id)
     tasks = list(
         await session.scalars(
             select(Task)
@@ -184,6 +188,20 @@ async def list_my_tasks(
     )
     tasks.sort(key=lambda task: task.status is TaskStatus.CONFIRMED)
     return await _views(session, family_id, tasks)
+
+
+async def list_family_tasks(session: AsyncSession, family_id: uuid.UUID) -> list[TaskView]:
+    """Возвращает все дела семьи для общей доски: незавершённые и засчитанные сегодня."""
+    day_start = await _family_day_start(session, family_id)
+    tasks = await session.scalars(
+        select(Task)
+        .where(
+            Task.family_id == family_id,
+            or_(Task.status != TaskStatus.CONFIRMED, Task.confirmed_at >= day_start),
+        )
+        .order_by(Task.created_at)
+    )
+    return await _views(session, family_id, list(tasks))
 
 
 async def list_board(session: AsyncSession, family_id: uuid.UUID) -> list[TaskView]:

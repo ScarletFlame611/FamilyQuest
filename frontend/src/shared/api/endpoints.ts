@@ -70,6 +70,7 @@ export const api = {
 
   myTasks: () => request<Task[]>("GET", "/api/tasks/my"),
   board: () => request<Task[]>("GET", "/api/tasks/board"),
+  familyTasks: () => request<Task[]>("GET", "/api/tasks/family"),
   pendingTasks: () => request<Task[]>("GET", "/api/tasks/pending"),
   task: (id: string) => request<Task>("GET", `/api/tasks/${id}`),
   createTask: (key: string, body: TaskCreate) =>

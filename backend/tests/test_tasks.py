@@ -188,3 +188,21 @@ async def test_child_cannot_create_reject_or_see_pending(client: AsyncClient, de
     )
     pending = await client.get("/api/tasks/pending", headers=bearer(masha))
     assert create.status_code == reject.status_code == pending.status_code == 403
+
+
+async def test_family_tasks_are_the_same_for_child_and_adult(client: AsyncClient, demo: DemoFamily):
+    masha = await child_token(client, demo.masha_id)
+    toys = await task_id(client, masha, "/api/tasks/my", "Убрать игрушки")
+    await client.post(f"/api/tasks/{toys}/mark", headers=bearer(masha))
+
+    as_child = (await client.get("/api/tasks/family", headers=bearer(masha))).json()
+    as_adult = (
+        await client.get("/api/tasks/family", headers=bearer(await adult_token(client)))
+    ).json()
+    assert as_child == as_adult
+    statuses = {t["title"]: t["status"] for t in as_child}
+    assert statuses["Убрать игрушки"] == "marked"
+    assert statuses["Покормить кота"] == "assigned"
+    assert statuses["Вынести мусор"] == "open"
+    # Засчитанные сегодня дела истории тоже на доске, в колонке «Готово»
+    assert statuses["Помыть посуду"] == "confirmed"
