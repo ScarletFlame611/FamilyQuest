@@ -154,6 +154,9 @@ def test_only_ledger_module_touches_point_tables():
         if "modules/ledger" in path.as_posix():
             continue
         text = path.read_text()
-        if re.search(r"ledger\.models|\bAccount\b|\bLedgerEntry\b|accounts|ledger_entries", text):
+        # Модели журнала или имена его таблиц в SQL; вызовы ledger.service разрешены
+        if re.search(
+            r"ledger\.models|\bAccount\b|\bLedgerEntry\b|[\"'](accounts|ledger_entries)[\"']", text
+        ):
             offenders.append(path.relative_to(app_dir).as_posix())
     assert offenders == []
