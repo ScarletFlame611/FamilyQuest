@@ -1,5 +1,5 @@
-# Один проход основного сценария — 6 запросов: дела ребёнка, отметка, очередь взрослого,
-# подтверждение, повторная очередь, баланс ребёнка. Каждый виртуальный пользователь —
+# Один проход основного сценария — 7 запросов: дела ребёнка, отметка, очередь взрослого,
+# подтверждение, повторная очередь, баланс ребёнка и новое дело взамен засчитанного. Каждый виртуальный пользователь —
 # отдельная семья из подготовленных app.seed_load.
 
 import itertools
@@ -33,9 +33,10 @@ class Family(HttpUser):
             raise RuntimeError("Подготовлено меньше семей, чем пользователей в тесте")
         self.email = f"load-{self.number:04d}@familyquest.local"
         self.adult = self._login()
+        self.child_id = self._child_id()
         response = self.client.post(
             "/api/child-mode/start",
-            json={"child_id": self._child_id()},
+            json={"child_id": self.child_id},
             headers=self._auth(self.adult),
             name="подготовка: детский режим",
         )
@@ -84,6 +85,14 @@ class Family(HttpUser):
             "/api/tasks/pending", headers=self._auth(self.adult), name="5 очередь снова"
         )
         self.client.get("/api/balance", headers=self._auth(self.child), name="6 баланс")
+        # Без замены активные дела кончатся, а держать их у ребёнка сотнями — раздувать
+        # список дел на каждом проходе
+        self.client.post(
+            "/api/tasks",
+            json={"title": "Дело", "icon": "toys", "points": 5, "assignee_id": self.child_id},
+            headers=self._auth(self.adult, key=True),
+            name="7 новое дело",
+        )
 
 
 # Каждые --step-seconds добавляет --step-users семей, пока ответы укладываются в бюджет.
