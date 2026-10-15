@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 
 P95_LIMIT_MS = 1000
-REQUESTS_PER_PASS = 6
-WRITES_PER_PASS = 2
+REQUESTS_PER_PASS = 7
+WRITES_PER_PASS = 3
 
 
 def rows(path: Path) -> list[dict[str, str]]:

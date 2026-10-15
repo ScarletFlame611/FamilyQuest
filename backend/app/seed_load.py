@@ -51,7 +51,9 @@ async def create_load_family(session: AsyncSession, n: int, password: str, tasks
 async def main() -> None:
     parser = argparse.ArgumentParser(description="Готовит семьи для нагрузочного теста")
     parser.add_argument("families", type=int)
-    parser.add_argument("--tasks", type=int, default=300)
+    # Столько же активных дел, сколько у ребёнка на экране; взамен засчитанного
+    # дела нагрузочный сценарий сам создаёт новое
+    parser.add_argument("--tasks", type=int, default=5)
     args = parser.parse_args()
     password = get_settings().load_password
     if password is None:

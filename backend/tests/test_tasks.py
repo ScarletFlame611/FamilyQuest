@@ -1,8 +1,13 @@
 import asyncio
+from datetime import timedelta
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import now_utc
+from app.modules.tasks import service as tasks
+from app.modules.tasks.enums import TaskIcon
 from app.seed import PAPA_EMAIL, DemoFamily
 from tests.api import adult_token, adult_tokens, bearer, child_token, warm_pool, with_key
 from tests.factories import PAPA_PASSWORD
@@ -206,3 +211,40 @@ async def test_family_tasks_are_the_same_for_child_and_adult(client: AsyncClient
     assert statuses["Вынести мусор"] == "open"
     # Засчитанные сегодня дела истории тоже на доске, в колонке «Готово»
     assert statuses["Помыть посуду"] == "confirmed"
+
+
+async def test_my_tasks_skip_confirmed_on_previous_days(
+    client: AsyncClient, session: AsyncSession, demo: DemoFamily, monkeypatch: pytest.MonkeyPatch
+):
+    masha = await child_token(client, demo.masha_id)
+    before = (await client.get("/api/tasks/my", headers=bearer(masha))).json()
+    start = now_utc()
+    clock = {"now": start}
+    monkeypatch.setattr("app.modules.tasks.service.now_utc", lambda: clock["now"])
+    for day in range(1, 101):
+        clock["now"] = start - timedelta(days=day)
+        view = await tasks.create_task(
+            session, demo.family_id, demo.mama_id, f"Старое {day}", TaskIcon.BED, 1, demo.masha_id
+        )
+        await tasks.mark(session, demo.family_id, view.id, demo.masha_id)
+        await tasks.confirm(session, demo.family_id, view.id)
+    await session.commit()
+    clock["now"] = start
+
+    toys = await task_id(client, masha, "/api/tasks/my", "Убрать игрушки")
+    await client.post(f"/api/tasks/{toys}/mark", headers=bearer(masha))
+    cat = await task_id(client, masha, "/api/tasks/my", "Покормить кота")
+    await client.post(f"/api/tasks/{cat}/mark", headers=bearer(masha))
+    confirmed = await client.post(
+        f"/api/tasks/{cat}/confirm", headers=bearer(await adult_token(client))
+    )
+    assert confirmed.status_code == 200
+
+    after = (await client.get("/api/tasks/my", headers=bearer(masha))).json()
+    assert len(after) == len(before)
+    assert not [t for t in after if t["title"].startswith("Старое")]
+    assert [(t["title"], t["status"]) for t in after] == [
+        ("Убрать игрушки", "marked"),
+        ("Полить цветы", "assigned"),
+        ("Покормить кота", "confirmed"),
+    ]
