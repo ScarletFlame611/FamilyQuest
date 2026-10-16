@@ -123,6 +123,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/family/children": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Child */
+        post: operations["add_child_api_family_children_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/family/pin": {
         parameters: {
             query?: never;
@@ -603,6 +620,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AgeGroup
+         * @enum {string}
+         */
+        AgeGroup: "6-7" | "8-10" | "11-13";
         /** BalanceOut */
         BalanceOut: {
             /** Balance */
@@ -616,6 +638,16 @@ export interface components {
         CancelIn: {
             /** Reason */
             reason: string;
+        };
+        /** ChildCreateIn */
+        ChildCreateIn: {
+            /** Name */
+            name: string;
+            /** Avatar */
+            avatar: string;
+            age_group: components["schemas"]["AgeGroup"];
+            /** Parent Consent */
+            parent_consent: boolean;
         };
         /** ChildEventOut */
         ChildEventOut: {
@@ -808,6 +840,7 @@ export interface components {
             role: components["schemas"]["MemberRole"];
             /** Avatar */
             avatar: string;
+            age_group: components["schemas"]["AgeGroup"] | null;
             family: components["schemas"]["FamilyBriefOut"];
         };
         /** MemberOut */
@@ -822,6 +855,7 @@ export interface components {
             role: components["schemas"]["MemberRole"];
             /** Avatar */
             avatar: string;
+            age_group: components["schemas"]["AgeGroup"] | null;
         };
         /**
          * MemberRole
@@ -1238,6 +1272,39 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_child_api_family_children_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChildCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -2,7 +2,7 @@ import uuid
 
 from pydantic import BaseModel, Field
 
-from app.modules.families.enums import MemberRole
+from app.modules.families.enums import AgeGroup, MemberRole
 
 
 class MemberOut(BaseModel):
@@ -10,6 +10,15 @@ class MemberOut(BaseModel):
     name: str
     role: MemberRole
     avatar: str
+    age_group: AgeGroup | None
+
+
+class ChildCreateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    avatar: str = Field(min_length=1, max_length=32)
+    age_group: AgeGroup
+    # Взрослый явно подтверждает согласие на обработку данных ребёнка
+    parent_consent: bool
 
 
 class FamilyBriefOut(BaseModel):

@@ -5,6 +5,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.families import service as families
+from app.modules.families.enums import AgeGroup
 from app.modules.users import service as users
 from app.seed import DEMO_PIN, MAMA_EMAIL, DemoFamily
 from tests.api import warm_pool
@@ -81,7 +82,7 @@ async def test_child_mode_needs_a_pin_and_a_child(
     family_id = await families.create_family(session, "Без PIN", "Europe/Moscow")
     user_id = await users.create_user(session, "nopin@familyquest.local", "pass-nopin", "Оля")
     await families.add_adult(session, family_id, user_id, "Оля", "woman")
-    child_id = await families.add_child(session, family_id, "Коля", "fox")
+    child_id = await families.add_child(session, family_id, "Коля", "fox", AgeGroup.AGE_6_7, True)
     await session.commit()
     login = await client.post(
         "/api/auth/login", json={"email": "nopin@familyquest.local", "password": "pass-nopin"}

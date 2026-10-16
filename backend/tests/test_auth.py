@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.clock import now_utc
 from app.modules.child_mode.models import ChildSession
 from app.modules.families import service as families
-from app.modules.families.enums import MemberRole
+from app.modules.families.enums import AgeGroup, MemberRole
 from app.modules.rewards import service as rewards
 from app.modules.tasks import service as tasks
 from app.modules.tasks.enums import TaskIcon
@@ -115,7 +115,9 @@ async def test_other_family_objects_are_not_found(
     other_family = await families.create_family(session, "Соседи", "Europe/Moscow")
     other_user = await users.create_user(session, "sosed@familyquest.local", "secret-pass", "Сосед")
     other_adult = await families.add_adult(session, other_family, other_user, "Сосед", "man")
-    other_child = await families.add_child(session, other_family, "Ваня", "panda")
+    other_child = await families.add_child(
+        session, other_family, "Ваня", "panda", AgeGroup.AGE_6_7, True
+    )
     other_task_view = await tasks.create_task(
         session, other_family, other_adult, "Чужое дело", TaskIcon.TOYS, 5, other_child
     )

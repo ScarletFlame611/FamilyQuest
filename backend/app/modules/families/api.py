@@ -1,11 +1,19 @@
 import uuid
+from dataclasses import asdict
 
 from fastapi import APIRouter, status
 
 from app.core.errors import InvalidInputError, TooManyAttemptsError
 from app.deps import AdultDep, MemberDep, SessionDep
 from app.modules.families import service
-from app.modules.families.schemas import FamilyBriefOut, FamilyOut, MemberOut, MeOut, SetPinIn
+from app.modules.families.schemas import (
+    ChildCreateIn,
+    FamilyBriefOut,
+    FamilyOut,
+    MemberOut,
+    MeOut,
+    SetPinIn,
+)
 from app.modules.users import service as users
 
 router = APIRouter(prefix="/api", tags=["family"])
@@ -15,13 +23,7 @@ router = APIRouter(prefix="/api", tags=["family"])
 async def me(member: MemberDep, session: SessionDep) -> MeOut:
     info = await service.get_member(session, member.family_id, member.member_id)
     family = await service.get_family(session, member.family_id)
-    return MeOut(
-        id=info.id,
-        name=info.name,
-        role=info.role,
-        avatar=info.avatar,
-        family=FamilyBriefOut(id=family.id, name=family.name),
-    )
+    return MeOut(**asdict(info), family=FamilyBriefOut(id=family.id, name=family.name))
 
 
 @router.get("/family")
@@ -31,14 +33,28 @@ async def family(member: MemberDep, session: SessionDep) -> FamilyOut:
     return FamilyOut(
         id=info.id,
         name=info.name,
-        members=[MemberOut(id=m.id, name=m.name, role=m.role, avatar=m.avatar) for m in members],
+        members=[MemberOut(**asdict(m)) for m in members],
     )
 
 
 @router.get("/family/members/{member_id}")
 async def family_member(member_id: uuid.UUID, member: MemberDep, session: SessionDep) -> MemberOut:
     info = await service.get_member(session, member.family_id, member_id)
-    return MemberOut(id=info.id, name=info.name, role=info.role, avatar=info.avatar)
+    return MemberOut(**asdict(info))
+
+
+@router.post("/family/children", status_code=status.HTTP_201_CREATED)
+async def add_child(body: ChildCreateIn, adult: AdultDep, session: SessionDep) -> MemberOut:
+    child_id = await service.add_child(
+        session,
+        adult.family_id,
+        body.name.strip(),
+        body.avatar,
+        body.age_group,
+        body.parent_consent,
+    )
+    await session.commit()
+    return MemberOut(**asdict(await service.get_member(session, adult.family_id, child_id)))
 
 
 @router.put("/family/pin", status_code=status.HTTP_204_NO_CONTENT)

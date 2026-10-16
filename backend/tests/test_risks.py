@@ -21,6 +21,7 @@ ADULT_ONLY = {
     ("POST", "/api/purchases/{purchase_id}/cancel"),
     ("GET", "/api/purchases/pending"),
     ("PUT", "/api/family/pin"),
+    ("POST", "/api/family/children"),
     ("POST", "/api/child-mode/start"),
     ("GET", "/api/child-mode/sessions"),
     ("GET", "/api/child-mode/sessions/{session_id}/events"),
@@ -32,6 +33,12 @@ BODIES = {
     "/api/tasks/{task_id}/reject": {"reason": "сам"},
     "/api/purchases/{purchase_id}/cancel": {"reason": "сам"},
     "/api/family/pin": {"current_password": "x", "pin": "2580"},
+    "/api/family/children": {
+        "name": "Брат",
+        "avatar": "fox",
+        "age_group": "6-7",
+        "parent_consent": True,
+    },
     "/api/child-mode/start": {"child_id": str(uuid.uuid4())},  # noqa: TID251
 }
 

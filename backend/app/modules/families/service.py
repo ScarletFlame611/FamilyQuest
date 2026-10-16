@@ -5,6 +5,7 @@ from itertools import pairwise
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import now_utc
 from app.core.errors import (
     InvalidInputError,
     NotFoundError,
@@ -12,7 +13,7 @@ from app.core.errors import (
     UnauthorizedError,
 )
 from app.core.security import hash_secret, verify_secret
-from app.modules.families.enums import MemberRole
+from app.modules.families.enums import AgeGroup, MemberRole
 from app.modules.families.models import Family, Member
 from app.modules.ledger import service as ledger
 
@@ -33,6 +34,7 @@ class MemberInfo:
     name: str
     role: MemberRole
     avatar: str
+    age_group: AgeGroup | None
 
 
 @dataclass(frozen=True)
@@ -43,7 +45,13 @@ class FamilyInfo:
 
 
 def _info(member: Member) -> MemberInfo:
-    return MemberInfo(id=member.id, name=member.name, role=member.role, avatar=member.avatar)
+    return MemberInfo(
+        id=member.id,
+        name=member.name,
+        role=member.role,
+        avatar=member.avatar,
+        age_group=member.age_group,
+    )
 
 
 class WeakPinError(InvalidInputError):
@@ -55,6 +63,10 @@ class WrongPinError(UnauthorizedError):
 
 
 class PinLockedError(TooManyAttemptsError):
+    pass
+
+
+class ConsentRequiredError(InvalidInputError):
     pass
 
 
@@ -93,18 +105,10 @@ async def set_pin(session: AsyncSession, family_id: uuid.UUID, pin: str) -> None
     await session.flush()
 
 
-async def _add_member(
-    session: AsyncSession,
-    family_id: uuid.UUID,
-    role: MemberRole,
-    name: str,
-    avatar: str,
-    user_id: uuid.UUID | None,
-) -> uuid.UUID:
-    member = Member(family_id=family_id, role=role, name=name, avatar=avatar, user_id=user_id)
+async def _add_member(session: AsyncSession, member: Member) -> uuid.UUID:
     session.add(member)
     await session.flush()
-    await ledger.open_account(session, family_id, member.id)
+    await ledger.open_account(session, member.family_id, member.id)
     return member.id
 
 
@@ -112,14 +116,36 @@ async def add_adult(
     session: AsyncSession, family_id: uuid.UUID, user_id: uuid.UUID, name: str, avatar: str
 ) -> uuid.UUID:
     """Добавляет в семью взрослого с аккаунтом и заводит ему счёт."""
-    return await _add_member(session, family_id, MemberRole.ADULT, name, avatar, user_id)
+    return await _add_member(
+        session,
+        Member(
+            family_id=family_id, role=MemberRole.ADULT, name=name, avatar=avatar, user_id=user_id
+        ),
+    )
 
 
 async def add_child(
-    session: AsyncSession, family_id: uuid.UUID, name: str, avatar: str
+    session: AsyncSession,
+    family_id: uuid.UUID,
+    name: str,
+    avatar: str,
+    age_group: AgeGroup,
+    parent_consent: bool,
 ) -> uuid.UUID:
-    """Добавляет в семью ребёнка без почты и телефона и заводит ему счёт."""
-    return await _add_member(session, family_id, MemberRole.CHILD, name, avatar, None)
+    """Добавляет ребёнка только с согласия взрослого, без почты, телефона и даты рождения."""
+    if not parent_consent:
+        raise ConsentRequiredError("Без согласия взрослого профиль ребёнка не создаётся")
+    return await _add_member(
+        session,
+        Member(
+            family_id=family_id,
+            role=MemberRole.CHILD,
+            name=name,
+            avatar=avatar,
+            age_group=age_group,
+            parent_consent_at=now_utc(),
+        ),
+    )
 
 
 async def find_family_id_by_user(session: AsyncSession, user_id: uuid.UUID) -> uuid.UUID | None:

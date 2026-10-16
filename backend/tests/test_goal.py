@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.families import service as families
+from app.modules.families.enums import AgeGroup
 from app.modules.goals import service as goals
 from app.modules.goals.enums import GoalIcon
 from app.modules.goals.models import Goal
@@ -99,7 +100,7 @@ async def test_reversal_entry_reduces_progress(session: AsyncSession, demo: Demo
 
 async def test_points_earned_before_goal_do_not_count(session: AsyncSession, demo: DemoFamily):
     family = await families.create_family(session, "Новая", "Europe/Moscow")
-    child = await families.add_child(session, family, "Лиза", "fox")
+    child = await families.add_child(session, family, "Лиза", "fox", AgeGroup.AGE_6_7, True)
     await ledger.accrue(session, child, 50, note="До цели")
     await goals.create_goal(session, family, "Велосипед", GoalIcon.TENT, 100)
     await ledger.accrue(session, child, 7, note="После цели")
