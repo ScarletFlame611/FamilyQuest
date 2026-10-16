@@ -54,6 +54,7 @@ async def test_wrong_password_and_unknown_email_look_the_same(
     unknown = await login(client, email="nobody@familyquest.local")
     assert wrong.status_code == unknown.status_code == 401
     assert wrong.json() == unknown.json()
+    assert wrong.json()["detail"] == "Неверная почта или пароль"
 
 
 @pytest.mark.us02
@@ -62,7 +63,9 @@ async def test_ten_failures_lock_login_for_15_minutes(
 ):
     for _ in range(10):
         assert (await login(client, password="wrong")).status_code == 401
-    assert (await login(client)).status_code == 429
+    locked = await login(client)
+    assert locked.status_code == 429
+    assert locked.json()["detail"] == "Слишком много неудачных попыток. Попробуйте через 15 минут"
     later = now_utc() + timedelta(minutes=16)
     monkeypatch.setattr("app.modules.users.service.now_utc", lambda: later)
     assert (await login(client)).status_code == 200
