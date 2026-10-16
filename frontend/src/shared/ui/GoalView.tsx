@@ -3,7 +3,8 @@ import { GOAL_ICONS, avatar } from "../catalog";
 import { useLoad } from "../lib/useLoad";
 import { Tile } from "./layout";
 
-export function GoalView({ viewerId }: { viewerId: string | null }) {
+// Для ребёнка подписи короче и лента в виде «Мама: приготовить ужин, +20»
+export function GoalView({ viewerId, child }: { viewerId: string | null; child?: boolean }) {
   const { data: goal, error } = useLoad(api.goal);
   if (error && !goal) return <div className="note">{error}</div>;
   if (!goal) return null;
@@ -21,7 +22,7 @@ export function GoalView({ viewerId }: { viewerId: string | null }) {
           {goal.progress} <small>из {goal.target} ⭐</small>
         </div>
       </div>
-      <div className="sub">Кто сколько положил</div>
+      <div className="sub">{child ? "Кто сколько заработал" : "Кто сколько положил"}</div>
       <div className="members">
         {goal.contributions.map((c) => {
           const mine = c.member_id === viewerId;
@@ -44,7 +45,8 @@ export function GoalView({ viewerId }: { viewerId: string | null }) {
         {goal.feed.slice(0, 4).map((item) => (
           <div key={item.created_at + item.member_id}>
             <span>{avatar(item.avatar)}</span>
-            {item.name} · {item.title}, {item.points > 0 ? "+" : ""}
+            {child ? `${item.name}: ${item.title.toLowerCase()}` : `${item.name} · ${item.title}`},{" "}
+            {item.points > 0 ? "+" : ""}
             {item.points}
           </div>
         ))}

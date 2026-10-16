@@ -7,8 +7,8 @@ export function GoalScreen() {
   return (
     <>
       <MainHeader />
-      <Title text="Копилка семьи" hint="Звёздочки за дела сами засчитываются в копилку" />
-      <GoalView viewerId={me?.id ?? null} />
+      <Title text="Семья" hint="Тут видно, сколько звёздочек мы заработали вместе" />
+      <GoalView viewerId={me?.id ?? null} child />
     </>
   );
 }
