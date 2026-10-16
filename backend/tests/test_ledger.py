@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.ledger import service as ledger
-from app.modules.ledger.enums import EntryKind
+from app.modules.ledger.enums import BALANCE_KINDS, RESERVE_KINDS, EntryKind
 from app.modules.ledger.models import Account, LedgerEntry
 from app.seed import DEMO_PIN, DemoFamily
 from tests.api import adult_token, bearer, child_tokens, warm_pool, with_key
@@ -164,3 +164,45 @@ def test_only_ledger_module_touches_point_tables():
         ):
             offenders.append(path.relative_to(app_dir).as_posix())
     assert offenders == []
+
+
+async def journal_totals(session: AsyncSession, member_id) -> tuple[int, int]:
+    rows = await session.execute(
+        select(LedgerEntry.kind, func.sum(LedgerEntry.amount))
+        .join(Account, Account.id == LedgerEntry.account_id)
+        .where(Account.member_id == member_id)
+        .group_by(LedgerEntry.kind)
+    )
+    by_kind = {kind: int(total) for kind, total in rows.tuples()}
+    balance = sum(by_kind.get(kind, 0) for kind in BALANCE_KINDS)
+    reserved = sum(by_kind.get(kind, 0) for kind in RESERVE_KINDS)
+    return balance, reserved
+
+
+@pytest.mark.us10
+async def test_child_balance_equals_journal(
+    client: AsyncClient, session: AsyncSession, demo: DemoFamily
+):
+    toys, child = await masha_marks_toys(client, demo)
+    headers = bearer(child["access_token"])
+    shown = (await client.get("/api/balance", headers=headers)).json()
+    assert (shown["balance"], shown["reserved"]) == await journal_totals(session, demo.masha_id)
+    # Без покупок число на экране ребёнка — это просто сумма всех его записей журнала
+    total = await session.scalar(
+        select(func.sum(LedgerEntry.amount))
+        .join(Account, Account.id == LedgerEntry.account_id)
+        .where(Account.member_id == demo.masha_id)
+    )
+    assert shown["available"] == total == 35
+
+    mama = await adult_token(client)
+    await client.post(f"/api/tasks/{toys}/confirm", headers=bearer(mama))
+    rewards = (await client.get("/api/rewards", headers=headers)).json()
+    ice_cream = next(r["id"] for r in rewards if r["title"] == "Мороженое")
+    assert (await client.post(f"/api/rewards/{ice_cream}/buy", headers=headers)).status_code == 200
+
+    shown = (await client.get("/api/balance", headers=headers)).json()
+    balance, reserved = await journal_totals(session, demo.masha_id)
+    assert (shown["balance"], shown["reserved"]) == (balance, reserved) == (45, 20)
+    # На экране «баланс для трат»: отложенные под покупку баллы уже не потратить
+    assert shown["available"] == balance - reserved == 25

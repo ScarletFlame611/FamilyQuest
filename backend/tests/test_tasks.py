@@ -3,9 +3,12 @@ from datetime import timedelta
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import now_utc
+from app.modules.child_mode.enums import ChildEventType
+from app.modules.child_mode.models import ChildEvent
 from app.modules.tasks import service as tasks
 from app.modules.tasks.enums import TaskIcon
 from app.seed import PAPA_EMAIL, DemoFamily
@@ -299,3 +302,27 @@ async def test_task_price_is_positive_integer(client: AsyncClient, demo: DemoFam
         "/api/tasks", json={"title": "Дело", "icon": "bed", "points": points}, headers=bearer(mama)
     )
     assert response.status_code == 422
+
+
+@pytest.mark.us08
+async def test_parallel_presses_with_same_key_leave_one_mark(
+    client: AsyncClient, session: AsyncSession, demo: DemoFamily
+):
+    masha = await child_token(client, demo.masha_id)
+    toys = await task_id(client, masha, "/api/tasks/my", "Убрать игрушки")
+    await warm_pool(client, masha)
+    headers = with_key(masha, "mark-toys-press")
+    responses = await asyncio.gather(
+        *(client.post(f"/api/tasks/{toys}/mark", headers=headers) for _ in range(5))
+    )
+    assert {r.status_code for r in responses} == {200}
+    assert {r.json()["marked_at"] for r in responses} == {responses[0].json()["marked_at"]}
+    assert responses[0].json()["status"] == "marked"
+    marks = await session.scalar(
+        select(func.count()).where(
+            ChildEvent.type == ChildEventType.TASK_MARKED, ChildEvent.detail == "Убрать игрушки"
+        )
+    )
+    assert marks == 1
+    pending = await client.get("/api/tasks/pending", headers=bearer(await adult_token(client)))
+    assert [t["id"] for t in pending.json()] == [toys]
