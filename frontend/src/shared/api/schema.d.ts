@@ -1011,6 +1011,8 @@ export interface components {
         TaskCreateIn: {
             /** Title */
             title: string;
+            /** Description */
+            description?: string | null;
             icon: components["schemas"]["TaskIcon"];
             /** Points */
             points: number;
@@ -1031,6 +1033,8 @@ export interface components {
             id: string;
             /** Title */
             title: string;
+            /** Description */
+            description: string | null;
             icon: components["schemas"]["TaskIcon"];
             /** Points */
             points: number;

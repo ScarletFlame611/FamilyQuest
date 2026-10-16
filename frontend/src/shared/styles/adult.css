@@ -18,5 +18,6 @@
 .choices button { min-height: 48px; padding: 0 14px; border-radius: 999px; background: var(--bg); border: 2px solid var(--line); font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
 .choices button.on { border-color: var(--violet); background: var(--violet-soft); color: var(--violet-dark); }
 .pass.small { min-height: 44px; font-size: 16px; }
+textarea.pass { padding: 16px; resize: vertical; }
 .err:empty { display: none; }
 .adult .cta, .sheet-card .cta { font-size: 20px; min-height: 64px; }

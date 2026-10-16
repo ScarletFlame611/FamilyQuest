@@ -253,3 +253,49 @@ async def test_my_tasks_skip_confirmed_on_previous_days(
         ("Полить цветы", "assigned"),
         ("Покормить кота", "confirmed"),
     ]
+
+
+@pytest.mark.us06
+async def test_task_with_description_appears_for_assignee(client: AsyncClient, demo: DemoFamily):
+    mama = await adult_token(client)
+    created = await client.post(
+        "/api/tasks",
+        json={
+            "title": "Заправить кровать",
+            "description": "Подушку положить сверху",
+            "icon": "bed",
+            "points": 5,
+            "assignee_id": str(demo.masha_id),
+        },
+        headers=bearer(mama),
+    )
+    assert created.status_code == 201
+    masha = await child_token(client, demo.masha_id)
+    my = (await client.get("/api/tasks/my", headers=bearer(masha))).json()
+    task = next(t for t in my if t["id"] == created.json()["id"])
+    assert (task["title"], task["description"], task["points"], task["status"]) == (
+        "Заправить кровать",
+        "Подушку положить сверху",
+        5,
+        "assigned",
+    )
+    petya = await child_token(client, demo.petya_id)
+    others = (await client.get("/api/tasks/my", headers=bearer(petya))).json()
+    assert created.json()["id"] not in [t["id"] for t in others]
+
+    without = await client.post(
+        "/api/tasks",
+        json={"title": "Полить цветы", "description": "  ", "icon": "plant", "points": 3},
+        headers=bearer(mama),
+    )
+    assert without.json()["description"] is None
+
+
+@pytest.mark.us06
+@pytest.mark.parametrize("points", [0, -5, 2.5, "десять"])
+async def test_task_price_is_positive_integer(client: AsyncClient, demo: DemoFamily, points):
+    mama = await adult_token(client)
+    response = await client.post(
+        "/api/tasks", json={"title": "Дело", "icon": "bed", "points": points}, headers=bearer(mama)
+    )
+    assert response.status_code == 422

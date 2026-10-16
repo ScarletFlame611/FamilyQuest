@@ -16,6 +16,7 @@ const BOARD = "board";
 export function NewTaskScreen() {
   const { data: family } = useLoad(api.family);
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [icon, setIcon] = useState<TaskIcon>("toys");
   const [points, setPoints] = useState("10");
   const [assignee, setAssignee] = useState<string>(BOARD);
@@ -23,6 +24,7 @@ export function NewTaskScreen() {
   const create = useAction((key) =>
     api.createTask(key, {
       title: title.trim(),
+      description: description.trim() || null,
       icon,
       points: Number(points),
       assignee_id: assignee === BOARD ? null : assignee,
@@ -50,6 +52,17 @@ export function NewTaskScreen() {
             maxLength={60}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Например: Убрать игрушки"
+          />
+        </label>
+        <label className="field">
+          Описание
+          <small>Необязательно: что именно нужно сделать</small>
+          <textarea
+            className="pass"
+            rows={3}
+            value={description}
+            maxLength={500}
+            onChange={(e) => setDescription(e.target.value)}
           />
         </label>
         <div className="field">

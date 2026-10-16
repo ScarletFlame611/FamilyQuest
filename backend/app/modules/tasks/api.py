@@ -31,6 +31,8 @@ async def create_task(
                 body.icon,
                 body.points,
                 body.assignee_id,
+                # Пустое описание из формы не отличается от отсутствующего
+                (body.description or "").strip() or None,
             )
         )
 

@@ -8,6 +8,7 @@ from app.modules.tasks.enums import TaskIcon, TaskStatus
 
 class TaskCreateIn(BaseModel):
     title: str = Field(min_length=1, max_length=60)
+    description: str | None = Field(default=None, max_length=500)
     icon: TaskIcon
     points: int = Field(gt=0, le=1000)
     # Без исполнителя задача попадает на общую доску
@@ -21,6 +22,7 @@ class RejectIn(BaseModel):
 class TaskOut(BaseModel):
     id: uuid.UUID
     title: str
+    description: str | None
     icon: TaskIcon
     points: int
     status: TaskStatus

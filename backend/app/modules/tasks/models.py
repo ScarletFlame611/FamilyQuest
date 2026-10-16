@@ -26,6 +26,7 @@ class Task(Base):
         ForeignKey("families.id", ondelete="CASCADE"), index=True
     )
     title: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str | None] = mapped_column(String(500))
     icon: Mapped[str] = mapped_column(String(32))
     points: Mapped[int] = mapped_column(Integer)
     assignee_member_id: Mapped[uuid.UUID | None] = mapped_column(

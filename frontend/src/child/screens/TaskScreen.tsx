@@ -55,6 +55,7 @@ export function TaskScreen({ id }: { id: string }) {
         <Tile emoji={look.emoji} tint={look.tint} hero />
         <h1>{task.title}</h1>
         <PointsChip points={task.points} />
+        {task.description && <div className="note">{task.description}</div>}
         {task.status === "assigned" && task.reject_reason && (
           <div className="note">Взрослые вернули дело: {task.reject_reason}</div>
         )}

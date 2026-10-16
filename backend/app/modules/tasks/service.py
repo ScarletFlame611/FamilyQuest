@@ -28,6 +28,7 @@ class TaskTransitionError(ConflictError):
 class TaskView:
     id: uuid.UUID
     title: str
+    description: str | None
     icon: str
     points: int
     status: TaskStatus
@@ -73,6 +74,7 @@ async def _views(session: AsyncSession, family_id: uuid.UUID, tasks: list[Task])
         TaskView(
             id=task.id,
             title=task.title,
+            description=task.description,
             icon=task.icon,
             points=task.points,
             status=task.status,
@@ -109,6 +111,7 @@ async def create_task(
     icon: TaskIcon,
     points: int,
     assignee_member_id: uuid.UUID | None,
+    description: str | None = None,
 ) -> TaskView:
     """Создаёт задачу на участника своей семьи или, без исполнителя, на общей доске."""
     if assignee_member_id:
@@ -117,6 +120,7 @@ async def create_task(
         family_id=family_id,
         created_by_member_id=created_by_member_id,
         title=title,
+        description=description,
         icon=TaskIcon(icon),
         points=points,
         assignee_member_id=assignee_member_id,
