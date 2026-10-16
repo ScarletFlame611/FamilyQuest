@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react";
 
 import type { Balance, Member, Me } from "../shared/api/types";
+import { navigate } from "../shared/lib/router";
 
 export type ChildContextValue = {
   me: Me | null;
@@ -32,6 +33,33 @@ export function peekToast(): string {
 
 export function clearToast() {
   toast = "";
+}
+
+// Только что взятое дело: в «Моих делах» оно выделено один раз, при первом показе
+let fresh = "";
+
+export function setFresh(taskId: string) {
+  fresh = taskId;
+}
+
+export function peekFresh(): string {
+  return fresh;
+}
+
+export function clearFresh() {
+  fresh = "";
+}
+
+// Экран звёздочек возвращает туда, откуда ребёнок нажал на счётчик
+let starsReturn = "/kid";
+
+export function openStars(from: string) {
+  starsReturn = from;
+  navigate("/kid/stars");
+}
+
+export function starsReturnPath(): string {
+  return starsReturn;
 }
 
 export function stars(n: number): string {

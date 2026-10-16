@@ -30,6 +30,10 @@ h1, h2 { margin: 0; }
 .sub { font-size: 15px; color: var(--muted); font-weight: 800; margin-top: 4px; }
 
 .list { display: grid; gap: 10px; }
+.jump { display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 12px; width: 100%; min-height: 72px; margin-top: 14px; padding: 10px 16px 10px 10px; border: 2px dashed var(--violet); border-radius: 22px; background: var(--violet-soft); color: var(--violet-dark); text-align: left; font-size: 18px; font-weight: 900; line-height: 1.2; }
+.jump .tile { width: 56px; height: 56px; border-radius: 16px; font-size: 32px; background: #fff; }
+.jump small { display: block; font-size: 15px; font-weight: 800; color: var(--muted); }
+.jump .go { font-size: 26px; }
 .tcard { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 14px; width: 100%; min-height: 88px; padding: 12px 14px 12px 12px; background: var(--card); border-radius: 22px; box-shadow: 0 2px 0 var(--line); text-align: left; }
 .tile { width: 64px; height: 64px; border-radius: 18px; background: var(--tint, var(--violet-soft)); display: grid; place-items: center; font-size: 38px; line-height: 1; }
 .tname { font-size: 18px; font-weight: 800; line-height: 1.25; }
@@ -41,6 +45,7 @@ h1, h2 { margin: 0; }
 .chip.ok { background: var(--green-soft); color: var(--green-dark); font-size: 14px; }
 .chip.grey { background: #efedf5; color: var(--muted); }
 .tcard.done { box-shadow: none; background: transparent; border: 1.5px dashed var(--line); }
+.tcard.fresh { box-shadow: 0 0 0 3px var(--green), 0 2px 0 var(--line); animation: pop .5s ease-out; }
 .tcard.done .tile { filter: saturate(.5); opacity: .75; }
 .tcard.done .tname { color: var(--muted); }
 .take { height: 40px; padding: 0 16px; border-radius: 999px; background: var(--green); color: #fff; font-size: 16px; font-weight: 900; }
@@ -68,6 +73,8 @@ h1, h2 { margin: 0; }
 .timer i { display: block; height: 100%; width: 100%; background: var(--violet); transform-origin: left; animation: drain 2.6s linear forwards; }
 @keyframes drain { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .spinner { width: 72px; height: 72px; border-radius: 50%; border: 9px solid var(--line); border-top-color: var(--green); animation: spin .8s linear infinite; }
+.bignum { font-family: var(--head); font-size: 72px; font-weight: 900; line-height: 1; color: var(--amber-ink); font-variant-numeric: tabular-nums; animation: pop .5s ease-out; }
+@keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .burst { position: relative; }
 .burst span { position: absolute; left: 50%; top: 50%; font-size: 30px; animation: fly .9s ease-out forwards; }

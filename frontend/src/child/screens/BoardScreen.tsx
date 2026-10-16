@@ -1,6 +1,6 @@
 import { api } from "../../shared/api/endpoints";
 import { useLoad } from "../../shared/lib/useLoad";
-import { MainHeader, TaskCard, Title } from "../parts";
+import { JumpCard, MainHeader, TaskCard, Title } from "../parts";
 
 export function BoardScreen() {
   const { data: tasks } = useLoad(api.board);
@@ -20,6 +20,13 @@ export function BoardScreen() {
           ))}
         </div>
       )}
+      <JumpCard
+        to="/kid"
+        emoji="📋"
+        text="Мои дела"
+        hint="Вернуться к своим делам"
+        label="Мои дела"
+      />
     </>
   );
 }

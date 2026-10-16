@@ -5,12 +5,12 @@ import { TASK_ICONS } from "../../shared/catalog";
 import { navigate } from "../../shared/lib/router";
 import { errorText, useAction } from "../../shared/lib/useAction";
 import { useLoad } from "../../shared/lib/useLoad";
-import { setToast, useChild } from "../context";
+import { setFresh, setToast, useChild } from "../context";
 import { track } from "../events";
 import { PointsChip, SubHeader, Tile } from "../parts";
 
 export function TaskScreen({ id }: { id: string }) {
-  const { data: task, reload } = useLoad(() => api.task(id));
+  const { data: task } = useLoad(() => api.task(id));
   const { setTabsHidden } = useChild();
   const take = useAction((key) => api.take(key, id));
   const mark = useAction((key) => api.mark(key, id));
@@ -40,7 +40,8 @@ export function TaskScreen({ id }: { id: string }) {
   async function takeTask() {
     if ((await take.run()).ok) {
       setToast(`«${task!.title}» теперь в твоих делах`);
-      reload();
+      setFresh(id);
+      navigate("/kid", { replace: true });
     }
   }
 

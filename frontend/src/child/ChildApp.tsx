@@ -8,9 +8,8 @@ import { ChildContext } from "./context";
 import { track } from "./events";
 import { HandoverSheet } from "./HandoverSheet";
 import { BoardScreen } from "./screens/BoardScreen";
-import { BoughtScreen, DoneScreen } from "./screens/CelebrationScreens";
+import { BoughtScreen, DoneScreen, StarsScreen } from "./screens/CelebrationScreens";
 import { GoalScreen } from "./screens/GoalScreen";
-import { KanbanScreen } from "./screens/KanbanScreen";
 import { PinScreen } from "./screens/PinScreen";
 import { RewardScreen, ShopScreen } from "./screens/ShopScreens";
 import { TaskScreen } from "./screens/TaskScreen";
@@ -20,15 +19,15 @@ const TABS = [
   ["/kid", "📋", "Мои дела"],
   ["/kid/board", "🙋", "Можно взять"],
   ["/kid/shop", "🎁", "Награды"],
-  ["/kid/goal", "🐷", "Копилка"],
-  ["/kid/kanban", "🗂️", "Все дела"],
+  ["/kid/goal", "👨‍👩‍👧", "Семья"],
 ] as const;
 
-function tabOf(screen: string): string {
+// Дело и звёздочки открываются поверх вкладки, с которой пришёл ребёнок: она остаётся выделенной
+function tabOf(screen: string): string | null {
+  if (screen === "task" || screen === "stars" || screen === "pin") return null;
   if (screen === "board") return "/kid/board";
   if (screen === "shop" || screen === "reward" || screen === "bought") return "/kid/shop";
   if (screen === "goal") return "/kid/goal";
-  if (screen === "kanban") return "/kid/kanban";
   return "/kid";
 }
 
@@ -48,8 +47,8 @@ function Screen({ screen, id, tab }: { screen: string; id: string; tab: string }
       return <BoughtScreen key={id} id={id} />;
     case "goal":
       return <GoalScreen />;
-    case "kanban":
-      return <KanbanScreen />;
+    case "stars":
+      return <StarsScreen />;
     case "pin":
       return <PinScreen back={tab} />;
     default:
@@ -65,8 +64,8 @@ export function ChildApp() {
   const { data: balance, reload: refreshBalance } = useLoad(api.balance);
   const [tabsHidden, setTabsHidden] = useState(false);
   const [lastTab, setLastTab] = useState("/kid");
-  const tab = tabOf(screen);
-  if (screen !== "pin" && tab !== lastTab) setLastTab(tab);
+  const tab = tabOf(screen) ?? lastTab;
+  if (tab !== lastTab) setLastTab(tab);
   const hide = useCallback((hidden: boolean) => setTabsHidden(hidden), []);
   // Баллы могли начислить с телефона взрослого, пока ребёнок ходил по экранам
   useEffect(refreshBalance, [path, refreshBalance]);
@@ -85,7 +84,7 @@ export function ChildApp() {
       }}
     >
       <div
-        className={`app ${tabsHidden ? "notabs" : ""} ${screen === "kanban" ? "wide" : ""}`}
+        className={`app ${tabsHidden ? "notabs" : ""}`}
         key={path}
         onClickCapture={(event) => {
           const button = (event.target as HTMLElement).closest("button");

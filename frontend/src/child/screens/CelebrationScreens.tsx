@@ -1,10 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { api } from "../../shared/api/endpoints";
 import { REWARD_ICONS, TASK_ICONS } from "../../shared/catalog";
 import { navigate } from "../../shared/lib/router";
 import { useLoad } from "../../shared/lib/useLoad";
-import { useChild } from "../context";
+import { starsReturnPath, useChild } from "../context";
 import { AutoReturnTimer, PointsChip, Tile } from "../parts";
 
 const BURST = [
@@ -18,11 +18,11 @@ const BURST = [
 ];
 
 // Праздничный экран сам возвращает к списку за то же время, что идёт полоска таймера
-function useAutoReturn(path: string) {
+function useAutoReturn(path: string, ms = 2600) {
   useEffect(() => {
-    const timer = setTimeout(() => navigate(path, { replace: true }), 2600);
+    const timer = setTimeout(() => navigate(path, { replace: true }), ms);
     return () => clearTimeout(timer);
-  }, [path]);
+  }, [path, ms]);
 }
 
 export function DoneScreen({ id }: { id: string }) {
@@ -61,6 +61,28 @@ export function BoughtScreen({ id }: { id: string }) {
         Взрослые увидят покупку и выдадут награду. У тебя осталось {balance?.available ?? ""} ⭐
       </div>
       <AutoReturnTimer />
+    </div>
+  );
+}
+
+export function StarsScreen() {
+  const { balance } = useChild();
+  const [back] = useState(starsReturnPath);
+  useAutoReturn(back, 3500);
+  return (
+    <div className="focus" onClick={() => navigate(back, { replace: true })}>
+      <div className="burst">
+        <Tile emoji="⭐" tint="var(--amber-soft)" hero />
+        {BURST.map(([dx, dy]) => (
+          <span key={dx + dy} style={{ ["--dx" as string]: dx, ["--dy" as string]: dy }}>
+            ⭐
+          </span>
+        ))}
+      </div>
+      <div className="bignum">{balance?.available ?? ""}</div>
+      <h1>Столько звёздочек у тебя</h1>
+      <div className="note">Делай дела, и звёздочек станет больше</div>
+      <AutoReturnTimer seconds={3.5} />
     </div>
   );
 }
