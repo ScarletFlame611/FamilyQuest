@@ -69,6 +69,15 @@ async def test_ten_failures_lock_login_for_15_minutes(
 
 
 @pytest.mark.us02
+@pytest.mark.us02
+async def test_validation_error_does_not_echo_password(client: AsyncClient, demo: DemoFamily):
+    too_long = "секрет-" * 40
+    response = await login(client, password=too_long)
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["body", "password"]
+    assert "секрет" not in response.text
+
+
 async def test_success_resets_failure_counter(client: AsyncClient, demo: DemoFamily):
     for _ in range(9):
         await login(client, password="wrong")
@@ -135,7 +144,11 @@ async def test_no_endpoint_accepts_family_id(client: AsyncClient):
             assert not [n for n in names if "family" in n], path
     for name, schema in spec["components"]["schemas"].items():
         if name.endswith("In"):
-            assert not [f for f in schema.get("properties", {}) if "family" in f], name
+            # Название новой семьи при регистрации допустимо, идентификатор — нет
+            fields = [f for f in schema.get("properties", {}) if "family" in f]
+            assert fields in ([], ["family_name"]), name
+            if fields:
+                assert schema["properties"]["family_name"].get("format") != "uuid", name
 
 
 @pytest.mark.risk

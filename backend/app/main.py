@@ -1,6 +1,8 @@
 from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -64,6 +66,17 @@ STATUS_BY_ERROR: list[tuple[type[DomainError], int]] = [
 async def domain_error_handler(_: Request, error: DomainError) -> JSONResponse:
     status = next(code for cls, code in STATUS_BY_ERROR if isinstance(error, cls))
     return JSONResponse(status_code=status, content={"detail": error.message, **error.extra})
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(_: Request, error: RequestValidationError) -> JSONResponse:
+    # Стандартный ответ FastAPI повторяет присланное значение, а в нём может быть
+    # пароль или PIN; клиенту хватает места и причины ошибки
+    errors = [
+        {key: value for key, value in item.items() if key not in ("input", "ctx")}
+        for item in error.errors()
+    ]
+    return JSONResponse(status_code=422, content={"detail": jsonable_encoder(errors)})
 
 
 class HealthOut(BaseModel):
