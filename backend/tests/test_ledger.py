@@ -26,6 +26,7 @@ async def masha_marks_toys(client: AsyncClient, demo: DemoFamily) -> tuple[str, 
     return toys, child
 
 
+@pytest.mark.us09
 async def test_critical_path_through_api(client: AsyncClient, demo: DemoFamily):
     mama = await adult_token(client)
     created = await client.post(
@@ -61,6 +62,7 @@ async def test_critical_path_through_api(client: AsyncClient, demo: DemoFamily):
     assert (history[0]["label"], history[0]["amount"]) == ("Заправить кровать", 7)
 
 
+@pytest.mark.us09
 @pytest.mark.risk
 async def test_fifty_parallel_confirms_accrue_once(
     client: AsyncClient, session: AsyncSession, demo: DemoFamily
@@ -104,6 +106,7 @@ async def test_second_accrual_for_task_is_absorbed_not_500(session: AsyncSession
     assert await ledger.find_mismatched_accounts(session) == []
 
 
+@pytest.mark.us10
 @pytest.mark.risk
 async def test_random_operations_keep_cache_equal_to_journal(
     session: AsyncSession, demo: DemoFamily
@@ -137,6 +140,7 @@ async def test_random_operations_keep_cache_equal_to_journal(
         assert current.available >= 0
 
 
+@pytest.mark.us09
 @pytest.mark.risk
 async def test_child_cannot_confirm(client: AsyncClient, session: AsyncSession, demo: DemoFamily):
     toys, child = await masha_marks_toys(client, demo)

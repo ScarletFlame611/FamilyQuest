@@ -19,6 +19,7 @@ from tests.factories import MAMA_PASSWORD, seed
 pytestmark = pytest.mark.anyio
 
 
+@pytest.mark.us10
 async def test_masha_starts_with_35_from_journal(session: AsyncSession):
     demo = await seed(session)
     balance = await ledger.get_balance(session, demo.masha_id)
@@ -69,6 +70,8 @@ async def test_second_active_goal_is_rejected(session: AsyncSession):
         await session.flush()
 
 
+@pytest.mark.us01
+@pytest.mark.us05
 async def test_secrets_are_stored_only_as_argon2_hashes(session: AsyncSession):
     demo = await seed(session)
     hashes = list(await session.scalars(select(User.password_hash)))
@@ -81,12 +84,14 @@ async def test_secrets_are_stored_only_as_argon2_hashes(session: AsyncSession):
     assert DEMO_PIN not in pin_hash
 
 
+@pytest.mark.us01
 async def test_email_is_unique_regardless_of_case(session: AsyncSession):
     await seed(session)
     with pytest.raises(IntegrityError, match="uq_users_email_lower"):
         await users.create_user(session, MAMA_EMAIL.upper(), "another-password", "Двойник")
 
 
+@pytest.mark.us05
 @pytest.mark.parametrize("pin", ["0000", "1111", "1234", "4321", "6789", "12a4", "123"])
 async def test_weak_or_malformed_pin_is_rejected(session: AsyncSession, pin: str):
     demo = await seed(session)

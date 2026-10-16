@@ -57,6 +57,7 @@ def test_t1_adult_actions_are_guarded_on_the_server():
     assert adult_routes() == ADULT_ONLY
 
 
+@pytest.mark.us09
 async def test_t1_t4_child_token_gets_403_on_every_adult_action(
     client: AsyncClient, demo: DemoFamily
 ):

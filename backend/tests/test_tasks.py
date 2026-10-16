@@ -20,6 +20,7 @@ async def task_id(client: AsyncClient, token: str, path: str, title: str) -> str
     return next(t["id"] for t in tasks if t["title"] == title)
 
 
+@pytest.mark.us06
 async def test_child_sees_only_own_tasks_and_family_board(client: AsyncClient, demo: DemoFamily):
     masha = await child_token(client, demo.masha_id)
     my = (await client.get("/api/tasks/my", headers=bearer(masha))).json()
@@ -41,6 +42,7 @@ async def test_child_sees_only_own_tasks_and_family_board(client: AsyncClient, d
     assert {t["assignee_name"] for t in petya_tasks} == {"Петя"}
 
 
+@pytest.mark.us08
 async def test_mark_rules(client: AsyncClient, demo: DemoFamily):
     masha = await child_token(client, demo.masha_id)
     petya = await child_token(client, demo.petya_id)
@@ -57,6 +59,7 @@ async def test_mark_rules(client: AsyncClient, demo: DemoFamily):
     assert again.json()["detail"] == "Дело уже отмечено и ждёт проверки"
 
 
+@pytest.mark.us08
 async def test_repeated_mark_with_same_key_returns_same_answer(
     client: AsyncClient, demo: DemoFamily
 ):
@@ -74,6 +77,7 @@ async def test_repeated_mark_with_same_key_returns_same_answer(
     assert other_request.status_code == 422
 
 
+@pytest.mark.us08
 @pytest.mark.risk
 async def test_parallel_repeats_with_same_key_run_once(client: AsyncClient, demo: DemoFamily):
     masha = await child_token(client, demo.masha_id)
@@ -151,6 +155,7 @@ async def test_reject_returns_task_with_reason(client: AsyncClient, demo: DemoFa
     assert wrong.status_code == 409
 
 
+@pytest.mark.us06
 async def test_create_task_validation(client: AsyncClient, demo: DemoFamily):
     mama = await adult_token(client)
     created = await client.post(

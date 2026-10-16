@@ -29,6 +29,7 @@ def bearer(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
+@pytest.mark.us02
 async def test_adult_logs_in_and_sees_herself(client: AsyncClient, demo: DemoFamily):
     response = await login(client, MAMA_EMAIL.upper())
     assert response.status_code == 200
@@ -45,6 +46,7 @@ async def test_family_lists_all_members(client: AsyncClient, demo: DemoFamily):
     assert [m["name"] for m in response.json()["members"]] == ["Мама", "Папа", "Маша", "Петя"]
 
 
+@pytest.mark.us02
 async def test_wrong_password_and_unknown_email_look_the_same(
     client: AsyncClient, demo: DemoFamily
 ):
@@ -54,6 +56,7 @@ async def test_wrong_password_and_unknown_email_look_the_same(
     assert wrong.json() == unknown.json()
 
 
+@pytest.mark.us02
 async def test_ten_failures_lock_login_for_15_minutes(
     client: AsyncClient, demo: DemoFamily, monkeypatch: pytest.MonkeyPatch
 ):
@@ -65,6 +68,7 @@ async def test_ten_failures_lock_login_for_15_minutes(
     assert (await login(client)).status_code == 200
 
 
+@pytest.mark.us02
 async def test_success_resets_failure_counter(client: AsyncClient, demo: DemoFamily):
     for _ in range(9):
         await login(client, password="wrong")
@@ -94,6 +98,7 @@ async def test_requests_without_valid_token_are_rejected(client: AsyncClient, de
     assert (await client.get("/api/me", headers=bearer("garbage"))).status_code == 401
 
 
+@pytest.mark.us03
 @pytest.mark.risk
 async def test_other_family_objects_are_not_found(
     client: AsyncClient, session: AsyncSession, demo: DemoFamily
@@ -120,6 +125,7 @@ async def test_other_family_objects_are_not_found(
     assert own.status_code == 200
 
 
+@pytest.mark.us03
 async def test_no_endpoint_accepts_family_id(client: AsyncClient):
     spec = (await client.get("/api/openapi.json")).json()
     for path, operations in spec["paths"].items():

@@ -56,6 +56,7 @@ async def test_progress_after_seed_equals_family_accruals_since_goal(
     ]
 
 
+@pytest.mark.us09
 async def test_confirmed_task_raises_balance_and_goal_equally(
     client: AsyncClient, session: AsyncSession, demo: DemoFamily
 ):

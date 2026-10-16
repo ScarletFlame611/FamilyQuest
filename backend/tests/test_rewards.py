@@ -152,6 +152,7 @@ async def test_child_cannot_give_or_cancel_and_adult_cannot_buy(
     assert (await buy(client, mama, "Мороженое")).status_code == 403
 
 
+@pytest.mark.us03
 @pytest.mark.risk
 async def test_other_family_purchase_is_not_found(
     client: AsyncClient, session: AsyncSession, demo: DemoFamily

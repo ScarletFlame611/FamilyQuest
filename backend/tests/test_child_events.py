@@ -98,6 +98,7 @@ async def test_client_cannot_forge_server_events(client: AsyncClient, demo: Demo
     assert forged.status_code == 422
 
 
+@pytest.mark.us03
 @pytest.mark.risk
 async def test_events_are_only_for_own_family_adults(
     client: AsyncClient, session: AsyncSession, demo: DemoFamily
