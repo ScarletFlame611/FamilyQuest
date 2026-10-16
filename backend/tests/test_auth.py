@@ -72,7 +72,6 @@ async def test_ten_failures_lock_login_for_15_minutes(
 
 
 @pytest.mark.us02
-@pytest.mark.us02
 async def test_validation_error_does_not_echo_password(client: AsyncClient, demo: DemoFamily):
     too_long = "секрет-" * 40
     response = await login(client, password=too_long)
@@ -81,6 +80,7 @@ async def test_validation_error_does_not_echo_password(client: AsyncClient, demo
     assert "секрет" not in response.text
 
 
+@pytest.mark.us02
 async def test_success_resets_failure_counter(client: AsyncClient, demo: DemoFamily):
     for _ in range(9):
         await login(client, password="wrong")
