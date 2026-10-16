@@ -1,8 +1,8 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const CHILD_SESSION = { role: "child", accessToken: "child-access", refreshToken: "child-refresh" };
+import { CHILD_SESSION, closeApp, openApp, settle, stubApi } from "./testing/app";
+
 const BALANCE = { balance: 45, reserved: 20, available: 25 };
 
 const RESPONSES: Record<string, unknown> = {
@@ -18,31 +18,10 @@ const RESPONSES: Record<string, unknown> = {
   "/api/balance": BALANCE,
 };
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+// Каждый тест заново собирает модули приложения, первый импорт бывает дольше 5 секунд
+vi.setConfig({ testTimeout: 30_000 });
 
-let root: Root | null = null;
 let container: HTMLDivElement;
-
-// Отдельный импорт на каждый тест — как новая вкладка: модули читают сессию из хранилища заново
-async function openApp(path: string) {
-  window.history.replaceState(null, "", path);
-  vi.resetModules();
-  const { App } = await import("./App");
-  container = document.createElement("div");
-  document.body.append(container);
-  root = createRoot(container);
-  await act(async () => root!.render(<App />));
-  await settle();
-}
-
-async function settle() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
-}
 
 async function goBackTo(path: string) {
   window.history.pushState(null, "", path);
@@ -55,25 +34,10 @@ async function goBackTo(path: string) {
 beforeEach(() => {
   localStorage.clear();
   localStorage.setItem("fq.session", JSON.stringify(CHILD_SESSION));
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (url: string) => {
-      const path = new URL(url, "http://localhost").pathname;
-      const body = path in RESPONSES ? RESPONSES[path] : [];
-      return new Response(JSON.stringify(body), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    }),
-  );
+  stubApi((_, path) => RESPONSES[path]);
 });
 
-afterEach(() => {
-  act(() => root?.unmount());
-  root = null;
-  container.remove();
-  vi.unstubAllGlobals();
-});
+afterEach(closeApp);
 
 function inChildMode(): boolean {
   return (
@@ -86,14 +50,14 @@ describe("US-07: детский режим не обходится", () => {
   it.each(["/", "/tasks/new", "/child-mode", "/pin", "/login"])(
     "прямой адрес взрослой страницы %s ведёт обратно в детский режим",
     async (path) => {
-      await openApp(path);
+      container = await openApp(path);
       expect(inChildMode()).toBe(true);
       expect(container.textContent).not.toContain("Новое дело");
     },
   );
 
   it("кнопка «Назад» на взрослый адрес оставляет в детском режиме", async () => {
-    await openApp("/kid");
+    container = await openApp("/kid");
     await goBackTo("/child-mode");
     expect(inChildMode()).toBe(true);
     await goBackTo("/");
@@ -102,8 +66,9 @@ describe("US-07: детский режим не обходится", () => {
 
   it("новая вкладка и перезагрузка открываются в детском режиме", async () => {
     await openApp("/kid/shop");
-    act(() => root?.unmount());
-    await openApp("/");
+    closeApp();
+    stubApi((_, path) => RESPONSES[path]);
+    container = await openApp("/");
     expect(inChildMode()).toBe(true);
     expect(JSON.parse(localStorage.getItem("fq.session")!).role).toBe("child");
   });
@@ -111,7 +76,7 @@ describe("US-07: детский режим не обходится", () => {
 
 describe("US-10: баланс ребёнка", () => {
   it("на экране ребёнка число из ответа сервера о балансе", async () => {
-    await openApp("/kid");
+    container = await openApp("/kid");
     const chip = container.querySelector(".bal");
     expect(chip?.textContent).toContain(String(BALANCE.available));
     expect(chip?.getAttribute("aria-label")).toBe(`Мои звёздочки: ${BALANCE.available}`);
