@@ -2,9 +2,23 @@ from fastapi import APIRouter, status
 
 from app.deps import SessionDep
 from app.modules.users import service
-from app.modules.users.schemas import LoginIn, RefreshIn, TokenOut
+from app.modules.users.schemas import LoginIn, RefreshIn, RegisterIn, TokenOut
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+async def register(body: RegisterIn, session: SessionDep) -> TokenOut:
+    tokens = await service.register(
+        session,
+        body.email,
+        body.password,
+        body.name.strip(),
+        body.avatar,
+        body.family_name.strip(),
+    )
+    await session.commit()
+    return TokenOut(access_token=tokens.access_token, refresh_token=tokens.refresh_token)
 
 
 @router.post("/login")

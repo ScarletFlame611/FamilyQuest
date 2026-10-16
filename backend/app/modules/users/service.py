@@ -4,11 +4,18 @@ from datetime import timedelta
 
 from argon2 import PasswordHasher
 from sqlalchemy import delete, func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import now_utc
 from app.core.config import get_settings
-from app.core.errors import DomainError, InvalidInputError, TooManyAttemptsError, UnauthorizedError
+from app.core.errors import (
+    ConflictError,
+    DomainError,
+    InvalidInputError,
+    TooManyAttemptsError,
+    UnauthorizedError,
+)
 from app.core.security import (
     AccessClaims,
     create_access_token,
@@ -44,6 +51,10 @@ class WrongPasswordError(InvalidInputError):
     pass
 
 
+class EmailTakenError(ConflictError):
+    pass
+
+
 @dataclass(frozen=True)
 class TokenPair:
     access_token: str
@@ -58,6 +69,24 @@ async def create_user(session: AsyncSession, email: str, password: str, name: st
     session.add(user)
     await session.flush()
     return user.id
+
+
+async def register(
+    session: AsyncSession, email: str, password: str, name: str, avatar: str, family_name: str
+) -> TokenPair:
+    """Создаёт аккаунт, новую семью с этим взрослым и сразу выдаёт токены."""
+    try:
+        # Точка сохранения: одновременная регистрация той же почты упирается
+        # в уникальный индекс и должна дать понятную ошибку, а не 500
+        async with session.begin_nested():
+            user_id = await create_user(session, email, password, name)
+    except IntegrityError as error:
+        if "uq_users_email_lower" not in str(error.orig):
+            raise
+        raise EmailTakenError("Эта почта уже зарегистрирована") from None
+    family_id = await families.create_family(session, family_name, "Europe/Moscow")
+    member_id = await families.add_adult(session, family_id, user_id, name, avatar)
+    return await issue_tokens(session, member_id, family_id, MemberRole.ADULT)
 
 
 async def find_user_id_by_email(session: AsyncSession, email: str) -> uuid.UUID | None:
