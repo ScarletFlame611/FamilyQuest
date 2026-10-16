@@ -9,6 +9,19 @@ rm -rf "$RESULTS" && mkdir -p "$RESULTS"
 
 docker compose run --rm -q backend python -m app.seed_load "$FAMILIES"
 
+# Дважды в секунду: сколько соединений пула SQLAlchemy занято у API
+(
+  echo "time,checked_out,limit" > "$RESULTS/pool.csv"
+  while true; do
+    now=$(date +%s.%N | cut -c1-14)
+    curl -sf http://localhost:8000/api/health/pool \
+      | sed -E "s/.*\"checked_out\":([0-9]+),\"limit\":([0-9]+).*/$now,\1,\2\n/" \
+      >> "$RESULTS/pool.csv" || true
+    sleep 0.5
+  done
+) &
+POOL_SAMPLER=$!
+
 # Раз в 2 секунды: загрузка процессора контейнеров и запросы, ждущие блокировку в базе
 (
   echo "time,container,cpu,mem" > "$RESULTS/cpu.csv"
@@ -24,11 +37,11 @@ docker compose run --rm -q backend python -m app.seed_load "$FAMILIES"
   done
 ) &
 SAMPLER=$!
-trap 'kill $SAMPLER 2>/dev/null || true' EXIT
+trap 'kill $SAMPLER $POOL_SAMPLER 2>/dev/null || true' EXIT
 
 LOAD_FAMILIES="$FAMILIES" docker compose --profile loadtest run --rm locust
-kill $SAMPLER 2>/dev/null || true
-wait $SAMPLER 2>/dev/null || true
+kill $SAMPLER $POOL_SAMPLER 2>/dev/null || true
+wait $SAMPLER $POOL_SAMPLER 2>/dev/null || true
 
 docker compose run --rm -q backend python -m app.reconcile
 python3 loadtest/summarize.py "$RESULTS"

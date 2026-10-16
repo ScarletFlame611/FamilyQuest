@@ -11,7 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.core.db import get_session
+from app.core.db import engine, get_session
 from app.core.errors import (
     ConflictError,
     DomainError,
@@ -92,3 +92,20 @@ async def health(
     except (OSError, SQLAlchemyError):
         return JSONResponse(status_code=503, content={"status": "unavailable"})
     return HealthOut(status="ok")
+
+
+class PoolOut(BaseModel):
+    checked_out: int
+    limit: int
+
+
+@app.get("/api/health/pool", responses={404: {}})
+async def pool() -> PoolOut:
+    settings = get_settings()
+    if not settings.pool_metrics_enabled:
+        raise NotFoundError("Не найдено")
+    # Занятые соединения этого процесса API из предела «постоянные + временные»
+    return PoolOut(
+        checked_out=engine.pool.checkedout(),
+        limit=settings.db_pool_size + settings.db_max_overflow,
+    )

@@ -45,6 +45,8 @@ def make_engine(url: str) -> AsyncEngine:
     return create_async_engine(
         url,
         pool_pre_ping=True,
+        pool_size=settings.db_pool_size,
+        max_overflow=settings.db_max_overflow,
         connect_args={"timeout": settings.db_connect_timeout_seconds},
     )
 

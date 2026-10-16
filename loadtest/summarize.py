@@ -6,6 +6,10 @@ import sys
 from pathlib import Path
 
 P95_LIMIT_MS = 1000
+# Порог ступени 2 плана деградации: с какой загрузки пула p95 выходит за этот бюджет
+DEGRADE_P95_MS = 200
+# Первые секунды ступени перцентиль Locust ещё помнит предыдущую ступень
+WARMUP_SECONDS = 10
 REQUESTS_PER_PASS = 7
 WRITES_PER_PASS = 3
 
@@ -74,5 +78,58 @@ def main(results: Path) -> None:
     )
 
 
+def pool_by_step(results: Path, window: list[dict[str, str]]) -> None:
+    path = results / "pool.csv"
+    if not path.exists():
+        return
+    pool = [(float(r["time"]), int(r["checked_out"]) / int(r["limit"])) for r in rows(path)]
+    steps: dict[int, list[dict[str, str]]] = {}
+    for r in window:
+        steps.setdefault(int(r["users"]), []).append(r)
+
+    print()
+    print(f"Ступени нагрузки и загрузка пула (p95 и пул — после {WARMUP_SECONDS} с ступени)")
+    print("  семей | RPS | p95, мс | пул ср. | пул p95 | пул макс")
+    table = []
+    for users, part in sorted(steps.items()):
+        start = float(part[0]["time"]) + WARMUP_SECONDS
+        end = float(part[-1]["time"])
+        settled = [r for r in part if float(r["time"]) >= start] or part
+        used = sorted(u for t, u in pool if start <= t <= end)
+        if not used:
+            continue
+        p95 = statistics.median(number(r["p95_ms"]) for r in settled)
+        row = (
+            users,
+            statistics.mean(number(r["rps"]) for r in settled),
+            p95,
+            statistics.mean(used),
+            used[int(0.95 * (len(used) - 1))],
+            used[-1],
+        )
+        table.append(row)
+        print(
+            f"  {row[0]:5d} | {row[1]:3.0f} | {row[2]:7.0f} | {row[3]:6.0%} | "
+            f"{row[4]:6.0%} | {row[5]:6.0%}"
+        )
+    over = next((i for i, row in enumerate(table) if row[2] > DEGRADE_P95_MS), None)
+    if over is None:
+        print(f"  p95 ни на одной ступени не превысил {DEGRADE_P95_MS} мс")
+        return
+    breach = table[over]
+    print(
+        f"  p95 впервые выше {DEGRADE_P95_MS} мс на ступени {breach[0]} семей: "
+        f"{breach[2]:.0f} мс, пул занят в среднем на {breach[3]:.0%}"
+    )
+    if over:
+        last_ok = table[over - 1]
+        print(
+            f"  последняя ступень в бюджете: {last_ok[0]} семей, p95 {last_ok[2]:.0f} мс, "
+            f"пул в среднем {last_ok[3]:.0%}, p95 загрузки {last_ok[4]:.0%}"
+        )
+
+
 if __name__ == "__main__":
-    main(Path(sys.argv[1] if len(sys.argv) > 1 else "loadtest/results"))
+    results = Path(sys.argv[1] if len(sys.argv) > 1 else "loadtest/results")
+    main(results)
+    pool_by_step(results, [r for r in rows(results / "window.csv") if number(r["rps"]) > 0])
