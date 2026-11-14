@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.clock import now_utc
@@ -19,6 +19,8 @@ class Task(Base):
             f"(status = '{TaskStatus.OPEN}') = (assignee_member_id IS NULL)",
             name="open_has_no_assignee",
         ),
+        # Общая доска и список «ждут проверки» выбирают задачи семьи по статусу
+        Index("ix_tasks_family_id_status", "family_id", "status"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_id)

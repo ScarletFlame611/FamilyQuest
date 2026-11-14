@@ -38,6 +38,33 @@ BUILD_PROXY=http://host.docker.internal:7890 ./deploy/up.sh
 (CSV, время в секундах от начала сессии), затем семья создаётся заново.
 Структура базы не меняется.
 
+## Резервные копии
+
+```bash
+./deploy/backup.sh                          # копия базы и exports/ в backups/, затем очистка
+./deploy/backup-clean.sh --dry-run          # что сохранится и что будет удалено
+./deploy/backup-clean.sh                    # очистка: остаются 14 последних копий
+./deploy/restore-check.sh                   # свежая копия -> отдельная база, сверка записей
+./deploy/restore.sh backups/familyquest-<время>.dump   # замена рабочей базы копией
+```
+
+Копия — пара файлов с общей меткой времени: `familyquest-<время>.dump`
+(`pg_dump -Fc`, проверен `pg_restore -l`) и `familyquest-<время>-exports.tar.gz`
+(журналы детских сессий). Число хранимых копий — `BACKUP_KEEP`, второй
+каталог для копий — `BACKUP_MIRROR_DIR` (внешний диск или другой сервер).
+`restore.sh` спрашивает подтверждение и сначала сохраняет текущее состояние.
+
+Для локального окружения из `docker-compose.yml` перед командой добавьте
+`COMPOSE="docker compose"`.
+
+На VPS копия раз в сутки (crontab). Обычный вывод уходит в лог, ошибки —
+письмом на `MAILTO`:
+
+```
+MAILTO=team@example.com
+30 3 * * * cd /opt/familyquest && BACKUP_MIRROR_DIR=/mnt/backup/familyquest ./deploy/backup.sh >> backups/backup.log
+```
+
 ## На VPS
 
 То же самое, но сертификат — от Let's Encrypt для домена:
