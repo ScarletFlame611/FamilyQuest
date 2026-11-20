@@ -8,7 +8,7 @@ import { useLoad } from "../shared/lib/useLoad";
 import { LoadState } from "../shared/ui/LoadState";
 import { ActionButton } from "../shared/ui/ActionButton";
 import { CardAction, CardShell } from "../shared/ui/TaskCard";
-import { Title } from "../shared/ui/layout";
+import { Block, Empty, Title } from "../shared/ui/layout";
 import { AdultLayout } from "./AdultLayout";
 
 const ICONS = Object.keys(REWARD_ICONS) as RewardIcon[];
@@ -175,25 +175,25 @@ export function RewardsScreen() {
       <div className="cols">
         <NewReward onCreated={rewards.reload} />
         <div className="col">
-          <div className="sub">В каталоге у детей</div>
-          <LoadState state={rewards} />
-          {rewards.data && !shown.length && (
-            <div className="note">Пока нет наград. Добавьте первую — дети увидят её сразу.</div>
-          )}
-          <div className="list">
-            {shown.map((r) => (
-              <RewardRow key={`${r.id}:${r.title}:${r.price}`} reward={r} onChanged={rewards.reload} />
-            ))}
-          </div>
+          <Block title="В каталоге у детей" count={shown.length}>
+            <LoadState state={rewards} />
+            {rewards.data && !shown.length && (
+              <Empty emoji="🎁" text="Пока нет наград. Добавьте первую — дети увидят её сразу." />
+            )}
+            <div className="list">
+              {shown.map((r) => (
+                <RewardRow key={`${r.id}:${r.title}:${r.price}`} reward={r} onChanged={rewards.reload} />
+              ))}
+            </div>
+          </Block>
           {hidden.length > 0 && (
-            <>
-              <div className="sub">Скрытые</div>
+            <Block title="Скрытые" count={hidden.length}>
               <div className="list">
                 {hidden.map((r) => (
                   <RewardRow key={r.id} reward={r} onChanged={rewards.reload} />
                 ))}
               </div>
-            </>
+            </Block>
           )}
         </div>
       </div>

@@ -4,7 +4,7 @@ import { useLoad } from "../shared/lib/useLoad";
 import { LoadState } from "../shared/ui/LoadState";
 import { useAvatars } from "../shared/ui/Kanban";
 import { TaskCard } from "../shared/ui/TaskCard";
-import { Title } from "../shared/ui/layout";
+import { Block, Empty, Title } from "../shared/ui/layout";
 import { AdultLayout } from "./AdultLayout";
 
 export function AdultTasksScreen() {
@@ -29,26 +29,30 @@ export function AdultTasksScreen() {
     />
   );
 
+  const toNewTask = () => navigate("/tasks/new");
+
   return (
     <AdultLayout>
-      <Title text="Мои дела" hint="Своё дело засчитывается сразу, без подтверждения" />
+      <Title
+        text="Мои дела"
+        hint="Своё дело засчитывается сразу, без подтверждения"
+        action={<button onClick={toNewTask}>➕ Новое дело</button>}
+      />
       <div className="cols">
-        <div className="col">
-          <div className="sub">Мои</div>
+        <Block title="Свои дела" count={my.data?.length}>
           <LoadState state={my} />
           {my.data && !my.data.length && (
-            <div className="note">Своих дел нет. Возьмите дело с общей доски.</div>
+            <Empty emoji="🙌" text="Своих дел нет. Возьмите дело с общей доски." />
           )}
           <div className="list">{my.data?.map(card)}</div>
-        </div>
-        <div className="col">
-          <div className="sub">Можно взять</div>
+        </Block>
+        <Block title="Можно взять" count={board.data?.length}>
           <LoadState state={board} />
-          {board.data && !board.data.length && <div className="note">На общей доске пусто.</div>}
+          {board.data && !board.data.length && <Empty emoji="📭" text="На общей доске пусто." />}
           <div className="list">{board.data?.map(card)}</div>
-        </div>
+        </Block>
       </div>
-      <button className="cta violet" onClick={() => navigate("/tasks/new")}>
+      <button className="cta violet has-head-action" onClick={toNewTask}>
         ➕ Новое дело
       </button>
     </AdultLayout>

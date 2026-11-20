@@ -1,6 +1,6 @@
 import type { Goal } from "../api/types";
 import { GOAL_ICONS, avatar } from "../catalog";
-import { Tile } from "./layout";
+import { Block, Empty, Tile } from "./layout";
 
 // Цель загружает экран: взрослому по ней нужно решить, показывать ли форму новой цели.
 // Для ребёнка подписи короче и лента в виде «Мама: приготовить ужин, +20»
@@ -32,50 +32,53 @@ export function GoalView({
         {goal.reached && <span className="chip ok">🎉 Копилка полная!</span>}
       </div>
       <div className="col">
-        <div className="sub">{child ? "Кто сколько заработал" : "Кто сколько положил"}</div>
-        <div className="members">
-          {rows.map((c) => {
-            const mine = c.member_id === viewerId;
-            return (
-              <div key={c.member_id} className={`mem ${mine ? "me" : ""}`}>
-                <div className="av">{avatar(c.avatar)}</div>
-                <div>
-                  <div className="who">
-                    {mine ? "Ты" : c.name}
-                    {!child && total > 0 && ` · ${Math.round((c.points / total) * 100)}%`}
+        <Block title={child ? "Кто сколько заработал" : "Кто сколько положил"}>
+          <div className="members">
+            {rows.map((c) => {
+              const mine = c.member_id === viewerId;
+              return (
+                <div key={c.member_id} className={`mem ${mine ? "me" : ""}`}>
+                  <div className="av">{avatar(c.avatar)}</div>
+                  <div>
+                    <div className="who">
+                      {mine ? "Ты" : c.name}
+                      {!child && total > 0 && ` · ${Math.round((c.points / total) * 100)}%`}
+                    </div>
+                    <div className="bar thin">
+                      <div style={{ width: `${Math.round((c.points / max) * 100)}%` }} />
+                    </div>
                   </div>
-                  <div className="bar thin">
-                    <div style={{ width: `${Math.round((c.points / max) * 100)}%` }} />
-                  </div>
+                  <span className="n">{c.points}</span>
                 </div>
-                <span className="n">{c.points}</span>
+              );
+            })}
+            {!child && (
+              <div className="mem">
+                <span />
+                <div className="who">Всего</div>
+                <span className="n">{total}</span>
               </div>
-            );
-          })}
-          {!child && (
-            <div className="mem">
-              <span />
-              <div className="who">Всего</div>
-              <span className="n">{total}</span>
-            </div>
-          )}
-        </div>
-        <div className="sub">Недавно</div>
-        {!goal.feed.length && (
-          <div className="note">
-            {child ? "Сделай дело — и звёздочки появятся тут" : "Пока никто ничего не положил"}
+            )}
           </div>
-        )}
-        <div className="feed">
-          {goal.feed.slice(0, 4).map((item) => (
-            <div key={item.created_at + item.member_id}>
-              <span>{avatar(item.avatar)}</span>
-              {child ? `${item.name}: ${item.title.toLowerCase()}` : `${item.name} · ${item.title}`},{" "}
-              {item.points > 0 ? "+" : ""}
-              {item.points}
-            </div>
-          ))}
-        </div>
+        </Block>
+        <Block title="Недавно">
+          {!goal.feed.length && (
+            <Empty
+              emoji="⭐"
+              text={child ? "Сделай дело — и звёздочки появятся тут" : "Пока никто ничего не положил"}
+            />
+          )}
+          <div className="feed">
+            {goal.feed.slice(0, 4).map((item) => (
+              <div key={item.created_at + item.member_id}>
+                <span>{avatar(item.avatar)}</span>
+                {child ? `${item.name}: ${item.title.toLowerCase()}` : `${item.name} · ${item.title}`},{" "}
+                {item.points > 0 ? "+" : ""}
+                {item.points}
+              </div>
+            ))}
+          </div>
+        </Block>
       </div>
     </div>
   );

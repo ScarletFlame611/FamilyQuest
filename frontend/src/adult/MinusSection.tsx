@@ -6,6 +6,7 @@ import { avatar } from "../shared/catalog";
 import { useAction } from "../shared/lib/useAction";
 import { useLoad } from "../shared/lib/useLoad";
 import { ActionButton } from "../shared/ui/ActionButton";
+import { Block } from "../shared/ui/layout";
 
 function MinusRow({ member, minus, onDone }: { member: Member; minus: number; onDone: () => void }) {
   const [open, setOpen] = useState(false);
@@ -63,14 +64,13 @@ export function MinusSection() {
   if (!family || !inMinus.length) return null;
   const byId = new Map(family.members.map((m) => [m.id, m]));
   return (
-    <>
-      <div className="sub">Минус на балансе</div>
+    <Block title="Минус на балансе" count={inMinus.length}>
       {inMinus.map((b) => {
         const member = byId.get(b.member_id);
         return member ? (
           <MinusRow key={b.member_id} member={member} minus={-b.balance} onDone={balances.reload} />
         ) : null;
       })}
-    </>
+    </Block>
   );
 }

@@ -1,10 +1,39 @@
+import type { ReactNode } from "react";
+
 import { navigate } from "../lib/router";
 
-export function Title({ text, hint }: { text: string; hint?: string }) {
+// action — главная кнопка экрана: на ноутбуке она стоит справа от заголовка,
+// на телефоне экран показывает её крупно внизу, как раньше
+export function Title({ text, hint, action }: { text: string; hint?: string; action?: ReactNode }) {
   return (
-    <div className="title">
-      <h1>{text}</h1>
-      {hint && <p>{hint}</p>}
+    <div className="title-row">
+      <div className="title">
+        <h1>{text}</h1>
+        {hint && <p>{hint}</p>}
+      </div>
+      {action && <div className="head-action">{action}</div>}
+    </div>
+  );
+}
+
+// Раздел экрана: на телефоне подзаголовок над списком, на ноутбуке — колонка с подложкой
+export function Block({ title, count, children }: { title: string; count?: number; children: ReactNode }) {
+  return (
+    <section className="block">
+      <h2>
+        {title}
+        {count !== undefined && count > 0 && <span className="chip">{count}</span>}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+export function Empty({ emoji, text }: { emoji: string; text: string }) {
+  return (
+    <div className="empty">
+      <span aria-hidden="true">{emoji}</span>
+      {text}
     </div>
   );
 }

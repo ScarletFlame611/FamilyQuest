@@ -9,7 +9,7 @@ import { LoadState } from "../shared/ui/LoadState";
 import { ActionButton } from "../shared/ui/ActionButton";
 import { useAvatars } from "../shared/ui/Kanban";
 import { PurchaseCard, TaskCard } from "../shared/ui/TaskCard";
-import { Title } from "../shared/ui/layout";
+import { Block, Empty, Title } from "../shared/ui/layout";
 import { AdultLayout } from "./AdultLayout";
 import { MinusSection } from "./MinusSection";
 
@@ -83,16 +83,19 @@ export function HomeScreen() {
   const { data: me } = useLoad(api.me);
   const avatars = useAvatars();
 
+  const toChildMode = () => navigate("/child-mode");
+
   return (
     <AdultLayout>
-      <Title text="Проверка" hint="Дела детей ждут вашего подтверждения, награды — выдачи" />
+      <Title
+        text="Проверка"
+        hint="Дела детей ждут вашего подтверждения, награды — выдачи"
+        action={<button onClick={toChildMode}>🧒 Включить детский режим</button>}
+      />
       <div className="cols">
-        <div className="col">
-          <div className="sub">Ждут подтверждения</div>
+        <Block title="Ждут подтверждения" count={tasks.data?.length}>
           <LoadState state={tasks} />
-          {tasks.data && !tasks.data.length && (
-            <div className="note">Нет дел, которые ждут проверки.</div>
-          )}
+          {tasks.data && !tasks.data.length && <Empty emoji="✅" text="Нет дел, которые ждут проверки." />}
           <div className="list">
             {tasks.data?.map((task) => (
               <TaskCard
@@ -106,22 +109,23 @@ export function HomeScreen() {
             ))}
           </div>
           {tasks.data && <ConfirmAllPanel tasks={tasks.data} onDone={tasks.reload} />}
-        </div>
+        </Block>
         <div className="col">
-          <div className="sub">Купленные награды</div>
-          <LoadState state={purchases} />
-          {purchases.data && !purchases.data.length && (
-            <div className="note">Нет покупок, которые нужно выдать.</div>
-          )}
-          <div className="list">
-            {purchases.data?.map((p) => (
-              <PurchaseCard key={p.id} purchase={p} onChanged={purchases.reload} />
-            ))}
-          </div>
+          <Block title="Купленные награды" count={purchases.data?.length}>
+            <LoadState state={purchases} />
+            {purchases.data && !purchases.data.length && (
+              <Empty emoji="🎁" text="Нет покупок, которые нужно выдать." />
+            )}
+            <div className="list">
+              {purchases.data?.map((p) => (
+                <PurchaseCard key={p.id} purchase={p} onChanged={purchases.reload} />
+              ))}
+            </div>
+          </Block>
           <MinusSection />
         </div>
       </div>
-      <button className="cta violet" onClick={() => navigate("/child-mode")}>
+      <button className="cta violet has-head-action" onClick={toChildMode}>
         🧒 Включить детский режим
       </button>
     </AdultLayout>
