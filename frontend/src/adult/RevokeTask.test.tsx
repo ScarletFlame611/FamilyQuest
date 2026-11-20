@@ -28,7 +28,7 @@ beforeEach(() => {
   localStorage.setItem("fq.session", JSON.stringify(ADULT_SESSION));
   stubApi((method, path) => {
     if (method === "POST" && path === "/api/tasks/t1/revoke") {
-      return { task: { ...DISHES, status: "assigned" }, cancelled_purchases: [] };
+      return { task: { ...DISHES, status: "assigned" }, cancelled_purchases: ["Фломастеры"] };
     }
     return {
       "/api/me": { id: "mama", name: "Мама", role: "adult", avatar: "woman" },
@@ -67,6 +67,9 @@ describe("US-26: отмена подтверждения", () => {
     const [[, init]] = revokeCalls();
     expect(JSON.parse(String(init?.body))).toEqual({ reason: "Не помыта" });
     expect(new Headers(init?.headers).get("Idempotency-Key")).toBeTruthy();
+    expect(container.textContent).toContain(
+      "Подтверждение «Помыть посуду» отменено. Покупки отменены: Фломастеры",
+    );
   });
 
   it("без причины ничего не отправляет", async () => {

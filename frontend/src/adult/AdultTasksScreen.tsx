@@ -1,6 +1,7 @@
 import { api } from "../shared/api/endpoints";
 import { navigate } from "../shared/lib/router";
 import { useLoad } from "../shared/lib/useLoad";
+import { LoadState } from "../shared/ui/LoadState";
 import { useAvatars } from "../shared/ui/Kanban";
 import { TaskCard } from "../shared/ui/TaskCard";
 import { Title } from "../shared/ui/layout";
@@ -31,11 +32,11 @@ export function AdultTasksScreen() {
   return (
     <AdultLayout>
       <Title text="Мои дела" hint="Своё дело засчитывается сразу, без подтверждения" />
-      {my.error && <div className="err">{my.error}</div>}
+      <LoadState state={my} />
       {my.data && !my.data.length && <div className="note">Своих дел нет. Возьмите дело ниже.</div>}
       <div className="list">{my.data?.map(card)}</div>
       <div className="sub">Можно взять</div>
-      {board.error && <div className="err">{board.error}</div>}
+      <LoadState state={board} />
       {board.data && !board.data.length && <div className="note">На общей доске пусто.</div>}
       <div className="list">{board.data?.map(card)}</div>
       <button className="cta violet" onClick={() => navigate("/tasks/new")}>

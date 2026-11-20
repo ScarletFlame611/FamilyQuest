@@ -5,6 +5,7 @@ import type { RewardAdmin, RewardIcon } from "../shared/api/types";
 import { REWARD_ICONS } from "../shared/catalog";
 import { useAction } from "../shared/lib/useAction";
 import { useLoad } from "../shared/lib/useLoad";
+import { LoadState } from "../shared/ui/LoadState";
 import { ActionButton } from "../shared/ui/ActionButton";
 import { CardAction, CardShell } from "../shared/ui/TaskCard";
 import { Title } from "../shared/ui/layout";
@@ -173,7 +174,7 @@ export function RewardsScreen() {
       <Title text="Награды" hint="Что дети могут купить за баллы" />
       <NewReward onCreated={rewards.reload} />
       <div className="sub">В каталоге у детей</div>
-      {rewards.error && <div className="err">{rewards.error}</div>}
+      <LoadState state={rewards} />
       {rewards.data && !shown.length && (
         <div className="note">Пока нет наград. Добавьте первую — дети увидят её сразу.</div>
       )}

@@ -79,3 +79,22 @@ describe("обновление токенов не выкидывает из а�
     expect(getSession()).toEqual(child);
   });
 });
+
+describe("запрос без ответа", () => {
+  it("через 15 секунд считается обрывом связи, а не висит вечно", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_: string, init?: RequestInit) =>
+          new Promise<Response>((_, reject) => {
+            init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+          }),
+      ),
+    );
+    const pending = expect(api.me()).rejects.toBeInstanceOf(NetworkError);
+    await vi.advanceTimersByTimeAsync(15_000);
+    await pending;
+    vi.useRealTimers();
+  });
+});

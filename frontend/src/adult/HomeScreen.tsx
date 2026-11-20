@@ -5,6 +5,7 @@ import type { ConfirmAll, Task } from "../shared/api/types";
 import { navigate } from "../shared/lib/router";
 import { useAction } from "../shared/lib/useAction";
 import { useLoad } from "../shared/lib/useLoad";
+import { LoadState } from "../shared/ui/LoadState";
 import { ActionButton } from "../shared/ui/ActionButton";
 import { useAvatars } from "../shared/ui/Kanban";
 import { PurchaseCard, TaskCard } from "../shared/ui/TaskCard";
@@ -86,7 +87,7 @@ export function HomeScreen() {
     <AdultLayout>
       <Title text="Проверка" hint="Дела детей ждут вашего подтверждения, награды — выдачи" />
       <div className="sub">Ждут подтверждения</div>
-      {tasks.error && <div className="err">{tasks.error}</div>}
+      <LoadState state={tasks} />
       {tasks.data && !tasks.data.length && <div className="note">Нет дел, которые ждут проверки.</div>}
       <div className="list">
         {tasks.data?.map((task) => (
@@ -102,7 +103,7 @@ export function HomeScreen() {
       </div>
       {tasks.data && <ConfirmAllPanel tasks={tasks.data} onDone={tasks.reload} />}
       <div className="sub">Купленные награды</div>
-      {purchases.error && <div className="err">{purchases.error}</div>}
+      <LoadState state={purchases} />
       {purchases.data && !purchases.data.length && (
         <div className="note">Нет покупок, которые нужно выдать.</div>
       )}

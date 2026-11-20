@@ -62,12 +62,15 @@ export function TaskCard({
   viewerIsAdult,
   avatars,
   onChanged,
+  onNotice,
 }: {
   task: Task;
   viewerId: string | null;
   viewerIsAdult: boolean;
   avatars: Map<string, string>;
   onChanged: () => void;
+  // Сообщение для экрана: карточка после отмены переезжает в другую колонку и своё состояние теряет
+  onNotice?: (text: string) => void;
 }) {
   const take = useAction((key) => api.take(key, task.id));
   const mark = useAction((key) => api.mark(key, task.id));
@@ -103,7 +106,18 @@ export function TaskCard({
           label="Отменить подтверждение"
           tone="soft"
           state={revoke.state}
-          onClick={async () => reason.trim() && (await revoke.run()).ok && onChanged()}
+          onClick={async () => {
+            if (!reason.trim()) return;
+            const result = await revoke.run();
+            if (!result.ok) return;
+            const cancelled = result.value.cancelled_purchases;
+            onNotice?.(
+              cancelled.length
+                ? `Подтверждение «${task.title}» отменено. Покупки отменены: ${cancelled.join(", ")}`
+                : `Подтверждение «${task.title}» отменено`,
+            );
+            onChanged();
+          }}
         />
         <button className="kact soft" onClick={() => setRevoking(false)}>
           Не отменять

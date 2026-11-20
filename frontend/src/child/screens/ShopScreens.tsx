@@ -5,6 +5,7 @@ import { REWARD_ICONS } from "../../shared/catalog";
 import { navigate } from "../../shared/lib/router";
 import { errorText, useAction } from "../../shared/lib/useAction";
 import { useLoad } from "../../shared/lib/useLoad";
+import { LoadState } from "../../shared/ui/LoadState";
 import { stars, useChild } from "../context";
 import { MainHeader, SubHeader, Tile, Title } from "../parts";
 
@@ -14,11 +15,16 @@ function OfferChip({ offer }: { offer: RewardOffer }) {
 }
 
 export function ShopScreen() {
-  const { data: offers } = useLoad(api.rewards);
+  const shop = useLoad(api.rewards);
+  const offers = shop.data;
   return (
     <>
       <MainHeader />
       <Title text="Награды" hint="Выбирай, что хочешь, и покупай за звёздочки" />
+      <LoadState state={shop} child />
+      {offers && !offers.length && (
+        <div className="note">Наград пока нет. Попроси взрослых их добавить.</div>
+      )}
       <div className="shop">
         {offers?.map((offer) => {
           const look = REWARD_ICONS[offer.icon];
@@ -41,11 +47,19 @@ export function ShopScreen() {
 }
 
 export function RewardScreen({ id }: { id: string }) {
-  const { data: offers, reload } = useLoad(api.rewards);
+  const shop = useLoad(api.rewards);
+  const { data: offers, reload } = shop;
   const { refreshBalance } = useChild();
   const buy = useAction((key) => api.buy(key, id));
   const offer = offers?.find((o) => o.id === id);
-  if (!offer) return <SubHeader back="/kid/shop" />;
+  if (!offer)
+    return (
+      <>
+        <SubHeader back="/kid/shop" />
+        <LoadState state={shop} child />
+        {offers && <div className="note">Этой награды больше нет.</div>}
+      </>
+    );
   const look = REWARD_ICONS[offer.icon];
   // Баланс мог измениться с другого телефона: тогда сервер сам скажет, сколько не хватает
   const shortBy =

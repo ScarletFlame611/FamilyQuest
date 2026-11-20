@@ -36,20 +36,29 @@ export function newIdempotencyKey(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+const REQUEST_TIMEOUT_MS = 15_000;
+
 async function send(method: string, path: string, options: Options): Promise<Response> {
   const headers: Record<string, string> = {};
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
   if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
   const session = getSession();
   if (options.auth !== false && session) headers.Authorization = `Bearer ${session.accessToken}`;
+  // Без предела запрос на плохой связи может висеть бесконечно, и экран так и останется
+  // на «Загружаем». Повтор после таймаута безопасен: изменения идут с ключом идемпотентности
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     return await fetch(path, {
       method,
       headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      signal: controller.signal,
     });
   } catch {
     throw new NetworkError();
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -107,6 +116,8 @@ export async function request<T>(method: string, path: string, options: Options 
       setSession(null);
     }
   }
+  // 502–504 отдаёт прокси, когда сам API недоступен: для человека это та же «нет связи»
+  if (response.status >= 502 && response.status <= 504) throw new NetworkError();
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as ErrorBody;
     throw new ApiError(response.status, body);
