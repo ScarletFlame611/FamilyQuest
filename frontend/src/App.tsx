@@ -9,6 +9,7 @@ import { LoginScreen } from "./adult/LoginScreen";
 import { MoreScreen } from "./adult/MoreScreen";
 import { NewTaskScreen } from "./adult/NewTaskScreen";
 import { PinScreen } from "./adult/PinScreen";
+import { RewardsScreen } from "./adult/RewardsScreen";
 import { SessionsScreen } from "./adult/SessionsScreen";
 import { ChildApp } from "./child/ChildApp";
 import { navigate, usePath } from "./shared/lib/router";
@@ -21,6 +22,7 @@ const ADULT_SCREENS: Record<string, () => JSX.Element> = {
   "/kanban": KanbanScreen,
   "/goal": AdultGoalScreen,
   "/more": MoreScreen,
+  "/rewards": RewardsScreen,
   "/pin": PinScreen,
   "/child-mode": ChildModeScreen,
   "/sessions": SessionsScreen,

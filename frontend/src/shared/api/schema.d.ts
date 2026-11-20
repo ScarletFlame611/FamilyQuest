@@ -490,6 +490,24 @@ export interface paths {
         /** List Rewards */
         get: operations["list_rewards_api_rewards_get"];
         put?: never;
+        /** Create Reward */
+        post: operations["create_reward_api_rewards_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rewards/manage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Manage Rewards */
+        get: operations["manage_rewards_api_rewards_manage_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -511,7 +529,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update Reward */
+        patch: operations["update_reward_api_rewards__reward_id__patch"];
         trace?: never;
     };
     "/api/rewards/{reward_id}/buy": {
@@ -608,6 +627,23 @@ export interface paths {
         };
         /** Health */
         get: operations["health_api_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/health/pool": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pool */
+        get: operations["pool_api_health_pool_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -886,6 +922,13 @@ export interface components {
             /** Pin */
             pin: string;
         };
+        /** PoolOut */
+        PoolOut: {
+            /** Checked Out */
+            checked_out: number;
+            /** Limit */
+            limit: number;
+        };
         /** PurchaseOut */
         PurchaseOut: {
             /**
@@ -947,6 +990,29 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** RewardAdminOut */
+        RewardAdminOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            icon: components["schemas"]["RewardIcon"];
+            /** Price */
+            price: number;
+            /** Hidden */
+            hidden: boolean;
+        };
+        /** RewardCreateIn */
+        RewardCreateIn: {
+            /** Title */
+            title: string;
+            icon: components["schemas"]["RewardIcon"];
+            /** Price */
+            price: number;
+        };
         /**
          * RewardIcon
          * @enum {string}
@@ -983,6 +1049,15 @@ export interface components {
             icon: components["schemas"]["RewardIcon"];
             /** Price */
             price: number;
+        };
+        /** RewardUpdateIn */
+        RewardUpdateIn: {
+            /** Title */
+            title?: string | null;
+            /** Price */
+            price?: number | null;
+            /** Hidden */
+            hidden?: boolean | null;
         };
         /** SessionEventsOut */
         SessionEventsOut: {
@@ -1948,6 +2023,61 @@ export interface operations {
             };
         };
     };
+    create_reward_api_rewards_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RewardCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RewardAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    manage_rewards_api_rewards_manage_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RewardAdminOut"][];
+                };
+            };
+        };
+    };
     get_reward_api_rewards__reward_id__get: {
         parameters: {
             query?: never;
@@ -1966,6 +2096,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RewardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_reward_api_rewards__reward_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                reward_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RewardUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RewardAdminOut"];
                 };
             };
             /** @description Validation Error */
@@ -2157,6 +2324,33 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HealthOut"];
                 };
+            };
+        };
+    };
+    pool_api_health_pool_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoolOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

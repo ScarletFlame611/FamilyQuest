@@ -14,6 +14,7 @@ pytestmark = [pytest.mark.anyio, pytest.mark.us03, pytest.mark.risk]
 BODIES = {
     "/api/tasks/{task_id}/reject": {"reason": "чужое"},
     "/api/purchases/{purchase_id}/cancel": {"reason": "чужое"},
+    "/api/rewards/{reward_id}": {"price": 1},
 }
 
 

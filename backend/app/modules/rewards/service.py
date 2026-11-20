@@ -25,12 +25,17 @@ class PurchaseAlreadyResolvedError(ConflictError):
     pass
 
 
+class RewardHiddenError(ConflictError):
+    pass
+
+
 @dataclass(frozen=True)
 class RewardInfo:
     id: uuid.UUID
     title: str
     icon: str
     price: int
+    hidden: bool
 
 
 @dataclass(frozen=True)
@@ -95,16 +100,60 @@ async def create_reward(
     return reward.id
 
 
-async def get_reward(
-    session: AsyncSession, family_id: uuid.UUID, reward_id: uuid.UUID
-) -> RewardInfo:
-    """Возвращает награду своей семьи; чужая награда неотличима от несуществующей."""
+def _info(reward: Reward) -> RewardInfo:
+    return RewardInfo(
+        id=reward.id,
+        title=reward.title,
+        icon=reward.icon,
+        price=reward.price,
+        hidden=reward.hidden_at is not None,
+    )
+
+
+async def _find(session: AsyncSession, family_id: uuid.UUID, reward_id: uuid.UUID) -> Reward:
     reward = await session.scalar(
         select(Reward).where(Reward.id == reward_id, Reward.family_id == family_id)
     )
     if reward is None:
         raise RewardNotFoundError("Награда не найдена")
-    return RewardInfo(id=reward.id, title=reward.title, icon=reward.icon, price=reward.price)
+    return reward
+
+
+async def get_reward(
+    session: AsyncSession, family_id: uuid.UUID, reward_id: uuid.UUID
+) -> RewardInfo:
+    """Возвращает награду своей семьи; чужая награда неотличима от несуществующей."""
+    return _info(await _find(session, family_id, reward_id))
+
+
+async def list_rewards(session: AsyncSession, family_id: uuid.UUID) -> list[RewardInfo]:
+    """Возвращает все награды семьи для взрослого: сначала видимые детям, потом скрытые."""
+    rewards = await session.scalars(
+        select(Reward)
+        .where(Reward.family_id == family_id)
+        .order_by(Reward.hidden_at.is_not(None), Reward.price, Reward.title)
+    )
+    return [_info(r) for r in rewards]
+
+
+async def update_reward(
+    session: AsyncSession,
+    family_id: uuid.UUID,
+    reward_id: uuid.UUID,
+    title: str | None,
+    price: int | None,
+    hidden: bool | None,
+) -> RewardInfo:
+    """Меняет название, цену или видимость награды; уже купленные сохраняют прежнюю цену."""
+    reward = await _find(session, family_id, reward_id)
+    if title is not None:
+        reward.title = title
+    if price is not None:
+        reward.price = price
+    if hidden is not None and hidden != (reward.hidden_at is not None):
+        reward.hidden_at = now_utc() if hidden else None
+    await session.flush()
+    return _info(reward)
 
 
 async def list_offers(
@@ -121,7 +170,9 @@ async def list_offers(
         )
     )
     rewards = await session.scalars(
-        select(Reward).where(Reward.family_id == family_id).order_by(Reward.price, Reward.title)
+        select(Reward)
+        .where(Reward.family_id == family_id, Reward.hidden_at.is_(None))
+        .order_by(Reward.price, Reward.title)
     )
     return [
         RewardOffer(
@@ -142,6 +193,9 @@ async def buy(
 ) -> PurchaseView:
     """Покупает награду: баллы откладываются под блокировкой счёта до выдачи взрослым."""
     reward = await get_reward(session, family_id, reward_id)
+    if reward.hidden:
+        # Ребёнок мог открыть каталог до того, как взрослый убрал награду
+        raise RewardHiddenError("Этой награды больше нет в списке")
     purchase = RewardPurchase(
         family_id=family_id,
         reward_id=reward.id,

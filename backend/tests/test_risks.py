@@ -20,6 +20,9 @@ ADULT_ONLY = {
     ("POST", "/api/purchases/{purchase_id}/give"),
     ("POST", "/api/purchases/{purchase_id}/cancel"),
     ("GET", "/api/purchases/pending"),
+    ("GET", "/api/rewards/manage"),
+    ("POST", "/api/rewards"),
+    ("PATCH", "/api/rewards/{reward_id}"),
     ("PUT", "/api/family/pin"),
     ("POST", "/api/family/children"),
     ("POST", "/api/child-mode/start"),
@@ -32,6 +35,8 @@ BODIES = {
     "/api/tasks": {"title": "Себе", "icon": "bed", "points": 100},
     "/api/tasks/{task_id}/reject": {"reason": "сам"},
     "/api/purchases/{purchase_id}/cancel": {"reason": "сам"},
+    "/api/rewards": {"title": "Всё себе", "icon": "park", "price": 1},
+    "/api/rewards/{reward_id}": {"price": 1},
     "/api/family/pin": {"current_password": "x", "pin": "2580"},
     "/api/family/children": {
         "name": "Брат",
@@ -71,6 +76,8 @@ async def test_t1_t4_child_token_gets_403_on_every_adult_action(
     masha = await child_token(client, demo.masha_id)
     some_id = str(uuid.uuid4())  # noqa: TID251 — право проверяется раньше, чем объект
     for method, path in sorted(ADULT_ONLY):
-        url = path.format(task_id=some_id, purchase_id=some_id, session_id=some_id)
+        url = path.format(
+            task_id=some_id, purchase_id=some_id, session_id=some_id, reward_id=some_id
+        )
         response = await client.request(method, url, json=BODIES.get(path), headers=bearer(masha))
         assert response.status_code == 403, f"{method} {path}: {response.status_code}"

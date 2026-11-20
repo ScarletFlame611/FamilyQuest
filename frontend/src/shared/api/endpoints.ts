@@ -9,7 +9,10 @@ import type {
   Goal,
   Me,
   Purchase,
+  RewardAdmin,
+  RewardCreate,
   RewardOffer,
+  RewardUpdate,
   SessionEvents,
   Task,
   TaskCreate,
@@ -86,6 +89,11 @@ export const api = {
   ledger: () => request<Entry[]>("GET", "/api/ledger"),
 
   rewards: () => request<RewardOffer[]>("GET", "/api/rewards"),
+  manageRewards: () => request<RewardAdmin[]>("GET", "/api/rewards/manage"),
+  createReward: (key: string, body: RewardCreate) =>
+    request<RewardAdmin>("POST", "/api/rewards", { body, idempotencyKey: key }),
+  updateReward: (key: string, id: string, body: RewardUpdate) =>
+    request<RewardAdmin>("PATCH", `/api/rewards/${id}`, { body, idempotencyKey: key }),
   buy: (key: string, id: string) =>
     request<Purchase>("POST", `/api/rewards/${id}/buy`, { idempotencyKey: key }),
   pendingPurchases: () => request<Purchase[]>("GET", "/api/purchases/pending"),
