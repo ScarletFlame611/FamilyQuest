@@ -23,6 +23,14 @@ class ReserveMismatchError(ConflictError):
     pass
 
 
+class AccrualNotFoundError(NotFoundError):
+    pass
+
+
+class AlreadyReversedError(ConflictError):
+    pass
+
+
 @dataclass(frozen=True)
 class Balance:
     balance: int
@@ -90,8 +98,9 @@ async def accrue(
     amount: int,
     task_id: uuid.UUID | None = None,
     note: str | None = None,
+    task_attempt: int = 0,
 ) -> bool:
-    """Начисляет баллы под блокировкой счёта; повторное начисление за ту же задачу не проходит."""
+    """Начисляет баллы под блокировкой счёта; второе начисление за то же выполнение не проходит."""
     _positive(amount)
     account = await _lock_account(session, member_id)
     try:
@@ -104,6 +113,7 @@ async def accrue(
                     kind=EntryKind.ACCRUAL,
                     amount=amount,
                     task_id=task_id,
+                    task_attempt=task_attempt if task_id else None,
                     note=note,
                 )
             )
@@ -114,6 +124,50 @@ async def accrue(
     account.balance += amount
     await session.flush()
     return True
+
+
+async def reverse_task_accrual(
+    session: AsyncSession,
+    member_id: uuid.UUID,
+    task_id: uuid.UUID,
+    task_attempt: int,
+    reason: str,
+    author_member_id: uuid.UUID,
+) -> int:
+    """Сторнирует начисление за выполнение задачи новой записью и возвращает списанную сумму."""
+    account = await _lock_account(session, member_id)
+    accrual = await session.scalar(
+        select(LedgerEntry).where(
+            LedgerEntry.account_id == account.id,
+            LedgerEntry.task_id == task_id,
+            LedgerEntry.task_attempt == task_attempt,
+            LedgerEntry.kind == EntryKind.ACCRUAL,
+        )
+    )
+    if accrual is None:
+        raise AccrualNotFoundError("Начисление за это дело не найдено")
+    try:
+        async with session.begin_nested():
+            session.add(
+                LedgerEntry(
+                    account_id=account.id,
+                    kind=EntryKind.REVERSAL,
+                    amount=-accrual.amount,
+                    task_id=task_id,
+                    task_attempt=task_attempt,
+                    reverses_entry_id=accrual.id,
+                    created_by_member_id=author_member_id,
+                    note=reason,
+                )
+            )
+    except IntegrityError as error:
+        if "uq_ledger_entries_reverses" not in str(error.orig):
+            raise
+        raise AlreadyReversedError("Это начисление уже отменено") from None
+    # Баланс может уйти в минус, если баллы уже потрачены на выданную награду
+    account.balance -= accrual.amount
+    await session.flush()
+    return accrual.amount
 
 
 async def reserve(

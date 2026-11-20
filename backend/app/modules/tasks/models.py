@@ -39,6 +39,9 @@ class Task(Base):
     )
     status: Mapped[TaskStatus] = mapped_column(str_enum(TaskStatus, "task_status"))
     reject_reason: Mapped[str | None] = mapped_column(String(300))
+    # Номер выполнения: растёт при отмене подтверждения, чтобы повторное
+    # подтверждение дало новое начисление, а не упёрлось в прежнее
+    attempt: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     marked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)

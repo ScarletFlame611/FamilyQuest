@@ -15,6 +15,7 @@ import type {
   RewardCreate,
   RewardOffer,
   RewardUpdate,
+  Revoke,
   SessionEvents,
   Task,
   TaskCreate,
@@ -86,6 +87,8 @@ export const api = {
     request<Task>("POST", `/api/tasks/${id}/mark`, { idempotencyKey: key }),
   confirm: (key: string, id: string) =>
     request<Task>("POST", `/api/tasks/${id}/confirm`, { idempotencyKey: key }),
+  revoke: (key: string, id: string, reason: string) =>
+    request<Revoke>("POST", `/api/tasks/${id}/revoke`, { body: { reason }, idempotencyKey: key }),
   confirmAll: (key: string, taskIds: string[]) =>
     request<ConfirmAll>("POST", "/api/tasks/confirm-all", {
       body: { task_ids: taskIds },

@@ -54,6 +54,7 @@ async def test_second_accrual_for_same_task_is_rejected(session: AsyncSession):
             kind=EntryKind.ACCRUAL,
             amount=first.amount,
             task_id=first.task_id,
+            task_attempt=first.task_attempt,
         )
     )
     with pytest.raises(IntegrityError, match="uq_ledger_entries_accrual_task"):

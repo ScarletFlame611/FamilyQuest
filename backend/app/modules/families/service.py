@@ -42,6 +42,7 @@ class FamilyInfo:
     id: uuid.UUID
     name: str
     timezone: str
+    revoke_window_days: int
 
 
 def _info(member: Member) -> MemberInfo:
@@ -169,9 +170,14 @@ async def get_adult_membership(session: AsyncSession, user_id: uuid.UUID) -> Mem
 
 
 async def get_family(session: AsyncSession, family_id: uuid.UUID) -> FamilyInfo:
-    """Возвращает название и часовой пояс семьи."""
+    """Возвращает название, часовой пояс семьи и окно отмены подтверждения."""
     family = await session.get_one(Family, family_id)
-    return FamilyInfo(id=family.id, name=family.name, timezone=family.timezone)
+    return FamilyInfo(
+        id=family.id,
+        name=family.name,
+        timezone=family.timezone,
+        revoke_window_days=family.revoke_window_days,
+    )
 
 
 async def get_member(

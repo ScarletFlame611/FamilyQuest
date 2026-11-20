@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 from app.modules.tasks.enums import TaskIcon, TaskStatus
 
@@ -50,3 +51,14 @@ class SkippedTaskOut(BaseModel):
 class ConfirmAllOut(BaseModel):
     confirmed: list[TaskOut]
     skipped: list[SkippedTaskOut]
+
+
+class RevokeIn(BaseModel):
+    # Причина видна ребёнку и попадает в журнал, поэтому пустой она быть не может
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+
+
+class RevokeOut(BaseModel):
+    task: TaskOut
+    # Названия покупок, отменённых потому, что баллов на них больше не хватает
+    cancelled_purchases: list[str]

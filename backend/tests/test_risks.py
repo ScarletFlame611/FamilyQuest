@@ -16,6 +16,7 @@ ADULT_ONLY = {
     ("POST", "/api/tasks"),
     ("POST", "/api/tasks/{task_id}/confirm"),
     ("POST", "/api/tasks/{task_id}/reject"),
+    ("POST", "/api/tasks/{task_id}/revoke"),
     ("GET", "/api/tasks/pending"),
     ("POST", "/api/purchases/{purchase_id}/give"),
     ("POST", "/api/purchases/{purchase_id}/cancel"),
@@ -36,6 +37,7 @@ ADULT_ONLY = {
 BODIES = {
     "/api/tasks": {"title": "Себе", "icon": "bed", "points": 100},
     "/api/tasks/{task_id}/reject": {"reason": "сам"},
+    "/api/tasks/{task_id}/revoke": {"reason": "сам"},
     "/api/purchases/{purchase_id}/cancel": {"reason": "сам"},
     "/api/rewards": {"title": "Всё себе", "icon": "park", "price": 1},
     "/api/rewards/{reward_id}": {"price": 1},

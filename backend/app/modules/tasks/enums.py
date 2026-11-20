@@ -30,3 +30,4 @@ class TaskAction(StrEnum):
     MARK = "mark"
     CONFIRM = "confirm"
     REJECT = "reject"
+    REVOKE = "revoke"

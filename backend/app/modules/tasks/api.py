@@ -12,6 +12,8 @@ from app.modules.tasks.schemas import (
     ConfirmAllIn,
     ConfirmAllOut,
     RejectIn,
+    RevokeIn,
+    RevokeOut,
     SkippedTaskOut,
     TaskCreateIn,
     TaskOut,
@@ -143,3 +145,22 @@ async def confirm_all(
 
     ids = ",".join(sorted(str(task_id) for task_id in body.task_ids))
     return await run_idempotent(session, adult.member_id, key, f"confirm-all:{ids}", action)
+
+
+@router.post("/{task_id}/revoke", response_model=RevokeOut)
+async def revoke(
+    task_id: uuid.UUID,
+    body: RevokeIn,
+    adult: AdultDep,
+    session: SessionDep,
+    key: IdempotencyKeyHeader = None,
+) -> Response:
+    async def action() -> RevokeOut:
+        result = await service.revoke(
+            session, adult.family_id, task_id, body.reason, adult.member_id
+        )
+        return RevokeOut(task=_out(result.task), cancelled_purchases=result.cancelled_purchases)
+
+    return await run_idempotent(
+        session, adult.member_id, key, f"revoke:{task_id}:{body.reason}", action
+    )

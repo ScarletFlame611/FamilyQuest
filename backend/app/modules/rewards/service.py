@@ -262,6 +262,34 @@ async def cancel(
     return (await _purchase_views(session, family_id, [purchase]))[0]
 
 
+async def cancel_unaffordable_purchases(
+    session: AsyncSession, family_id: uuid.UUID, child_member_id: uuid.UUID, reason: str
+) -> list[PurchaseView]:
+    """Отменяет невыданные покупки, начиная с новых, пока резерв не станет по силам балансу."""
+    # Счёт участника уже заблокирован вызывающим: блокировки идут в порядке «счёт → покупка»
+    pending = await session.scalars(
+        select(RewardPurchase)
+        .where(
+            RewardPurchase.family_id == family_id,
+            RewardPurchase.child_member_id == child_member_id,
+            RewardPurchase.status == PurchaseStatus.PENDING,
+        )
+        .order_by(RewardPurchase.created_at.desc(), RewardPurchase.id.desc())
+        .with_for_update()
+    )
+    cancelled = []
+    for purchase in pending:
+        current = await ledger.get_balance(session, child_member_id)
+        if current.reserved <= current.balance:
+            break
+        purchase.status = PurchaseStatus.CANCELLED
+        purchase.cancel_reason = reason
+        purchase.resolved_at = now_utc()
+        await ledger.release(session, child_member_id, purchase.price, purchase.id)
+        cancelled.append(purchase)
+    return await _purchase_views(session, family_id, cancelled)
+
+
 async def purchase_titles(
     session: AsyncSession, family_id: uuid.UUID, purchase_ids: list[uuid.UUID]
 ) -> dict[uuid.UUID, str]:

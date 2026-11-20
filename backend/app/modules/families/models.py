@@ -12,10 +12,13 @@ from app.modules.families.enums import AgeGroup, MemberRole
 
 class Family(Base):
     __tablename__ = "families"
+    __table_args__ = (CheckConstraint("revoke_window_days > 0", name="revoke_window_positive"),)
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_id)
     name: Mapped[str] = mapped_column(String(100))
     timezone: Mapped[str] = mapped_column(String(64), default="Europe/Moscow")
+    # Сколько дней после подтверждения взрослый может его отменить
+    revoke_window_days: Mapped[int] = mapped_column(Integer, default=7, server_default="7")
     pin_hash: Mapped[str | None] = mapped_column(String(255))
     pin_failed_attempts: Mapped[int] = mapped_column(Integer, default=0)
     pin_locked: Mapped[bool] = mapped_column(Boolean, default=False)
