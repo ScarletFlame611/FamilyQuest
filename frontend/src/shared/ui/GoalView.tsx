@@ -1,13 +1,18 @@
-import { api } from "../api/endpoints";
+import type { Goal } from "../api/types";
 import { GOAL_ICONS, avatar } from "../catalog";
-import { useLoad } from "../lib/useLoad";
 import { Tile } from "./layout";
 
+// Цель загружает экран: взрослому по ней нужно решить, показывать ли форму новой цели.
 // Для ребёнка подписи короче и лента в виде «Мама: приготовить ужин, +20»
-export function GoalView({ viewerId, child }: { viewerId: string | null; child?: boolean }) {
-  const { data: goal, error } = useLoad(api.goal);
-  if (error && !goal) return <div className="note">{error}</div>;
-  if (!goal) return null;
+export function GoalView({
+  goal,
+  viewerId,
+  child,
+}: {
+  goal: Goal;
+  viewerId: string | null;
+  child?: boolean;
+}) {
   const max = Math.max(1, ...goal.contributions.map((c) => c.points));
   const look = GOAL_ICONS[goal.icon];
   return (
@@ -21,6 +26,7 @@ export function GoalView({ viewerId, child }: { viewerId: string | null; child?:
         <div className="nums">
           {goal.progress} <small>из {goal.target} ⭐</small>
         </div>
+        {goal.reached && <span className="chip ok">🎉 Копилка полная!</span>}
       </div>
       <div className="sub">{child ? "Кто сколько заработал" : "Кто сколько положил"}</div>
       <div className="members">
@@ -41,6 +47,11 @@ export function GoalView({ viewerId, child }: { viewerId: string | null; child?:
         })}
       </div>
       <div className="sub">Недавно</div>
+      {!goal.feed.length && (
+        <div className="note">
+          {child ? "Сделай дело — и звёздочки появятся тут" : "Пока никто ничего не положил"}
+        </div>
+      )}
       <div className="feed">
         {goal.feed.slice(0, 4).map((item) => (
           <div key={item.created_at + item.member_id}>

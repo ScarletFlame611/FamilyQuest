@@ -23,6 +23,7 @@ ADULT_ONLY = {
     ("GET", "/api/rewards/manage"),
     ("POST", "/api/rewards"),
     ("PATCH", "/api/rewards/{reward_id}"),
+    ("POST", "/api/goal"),
     ("PUT", "/api/family/pin"),
     ("POST", "/api/family/children"),
     ("POST", "/api/child-mode/start"),
@@ -37,6 +38,7 @@ BODIES = {
     "/api/purchases/{purchase_id}/cancel": {"reason": "сам"},
     "/api/rewards": {"title": "Всё себе", "icon": "park", "price": 1},
     "/api/rewards/{reward_id}": {"price": 1},
+    "/api/goal": {"title": "Своя цель", "icon": "pizza", "target": 1},
     "/api/family/pin": {"current_password": "x", "pin": "2580"},
     "/api/family/children": {
         "name": "Брат",

@@ -32,6 +32,12 @@ export const REWARD_ICONS: Record<RewardIcon, Look> = {
 
 export const GOAL_ICONS: Record<GoalIcon, Look> = {
   tent: { emoji: "🏕️", tint: "#ece6ff", label: "Поход" },
+  bicycle: { emoji: "🚲", tint: "#dcf3e2", label: "Велосипед" },
+  zoo: { emoji: "🦁", tint: "#fff0c2", label: "Зоопарк" },
+  cinema: { emoji: "🎬", tint: "#e3ecff", label: "Кино" },
+  pizza: { emoji: "🍕", tint: "#ffe6d2", label: "Пицца" },
+  board_game: { emoji: "🎲", tint: "#ffe2ea", label: "Настолка" },
+  sea: { emoji: "🌊", tint: "#e3ecff", label: "Море" },
 };
 
 const AVATARS: Record<string, string> = { woman: "👩", man: "👨", fox: "🦊", panda: "🐼" };

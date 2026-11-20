@@ -215,21 +215,31 @@ async def list_entries(
     ]
 
 
-async def family_earnings_since(
+async def family_earnings_timeline(
     session: AsyncSession, family_id: uuid.UUID, since: datetime
-) -> dict[uuid.UUID, int]:
-    """Сколько баллов заработал каждый участник семьи с указанного момента."""
+) -> list[EarningView]:
+    """Возвращает все начисления и их отмены в семье с указанного момента, старые первыми."""
     rows = await session.execute(
-        select(Account.member_id, func.sum(LedgerEntry.amount))
+        select(Account.member_id, LedgerEntry)
         .join(LedgerEntry, LedgerEntry.account_id == Account.id)
         .where(
             Account.family_id == family_id,
             LedgerEntry.kind.in_(EARNING_KINDS),
             LedgerEntry.created_at >= since,
         )
-        .group_by(Account.member_id)
+        # Идентификатор разводит записи с одинаковым временем, чтобы порядок не плавал
+        .order_by(LedgerEntry.created_at, LedgerEntry.id)
     )
-    return {member_id: int(total) for member_id, total in rows.tuples()}
+    return [
+        EarningView(
+            member_id=member_id,
+            amount=entry.amount,
+            task_id=entry.task_id,
+            note=entry.note,
+            created_at=entry.created_at,
+        )
+        for member_id, entry in rows.tuples()
+    ]
 
 
 async def recent_family_earnings(

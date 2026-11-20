@@ -611,7 +611,8 @@ export interface paths {
         /** Goal */
         get: operations["goal_api_goal_get"];
         put?: never;
-        post?: never;
+        /** Create Goal */
+        post: operations["create_goal_api_goal_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -818,11 +819,19 @@ export interface components {
              */
             created_at: string;
         };
+        /** GoalCreateIn */
+        GoalCreateIn: {
+            /** Title */
+            title: string;
+            icon: components["schemas"]["GoalIcon"];
+            /** Target */
+            target: number;
+        };
         /**
          * GoalIcon
          * @enum {string}
          */
-        GoalIcon: "tent";
+        GoalIcon: "tent" | "bicycle" | "zoo" | "cinema" | "pizza" | "board_game" | "sea";
         /** GoalOut */
         GoalOut: {
             /**
@@ -839,6 +848,8 @@ export interface components {
             progress: number;
             /** Reached */
             reached: boolean;
+            /** Reached At */
+            reached_at: string | null;
             /** Contributions */
             contributions: components["schemas"]["ContributionOut"][];
             /** Feed */
@@ -2294,6 +2305,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GoalOut"];
+                };
+            };
+        };
+    };
+    create_goal_api_goal_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

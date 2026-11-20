@@ -7,6 +7,7 @@ import type {
   Entry,
   Family,
   Goal,
+  GoalCreate,
   Me,
   Purchase,
   RewardAdmin,
@@ -106,6 +107,8 @@ export const api = {
     }),
 
   goal: () => request<Goal>("GET", "/api/goal"),
+  createGoal: (key: string, body: GoalCreate) =>
+    request<Goal>("POST", "/api/goal", { body, idempotencyKey: key }),
 
   sendChildEvents: (events: { type: ChildEventType; detail: string | null; ago_ms: number }[]) =>
     request<void>("POST", "/api/child-mode/events", { body: { events } }),
