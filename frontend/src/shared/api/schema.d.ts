@@ -1356,7 +1356,7 @@ export interface components {
          * TaskIcon
          * @enum {string}
          */
-        TaskIcon: "toys" | "cat" | "plant" | "trash" | "dishes" | "socks" | "bed" | "laundry" | "shopping" | "mop" | "iron" | "tools" | "vacuum" | "cooking";
+        TaskIcon: "toys" | "cat" | "plant" | "trash" | "dishes" | "socks" | "bed" | "laundry" | "shopping" | "mop" | "iron" | "tools" | "vacuum" | "cooking" | "homework" | "reading" | "backpack" | "sport" | "music" | "morning" | "sleep" | "teeth" | "walk" | "call" | "baby";
         /** TaskOut */
         TaskOut: {
             /**

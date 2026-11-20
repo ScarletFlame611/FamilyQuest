@@ -16,6 +16,13 @@
 .icons button.on { border-color: var(--violet); background: var(--violet-soft); color: var(--violet-dark); }
 /* Подписи наград длиннее подписей дел: «Фломастеры» не помещается в узкую ячейку */
 .icons.roomy { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); }
+.presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.presets button { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 6px 12px 6px 6px; border-radius: 16px; background: var(--card); border: 2px solid var(--line); text-align: left; font-size: 14px; font-weight: 700; }
+.presets button .tile { width: 40px; height: 40px; font-size: 22px; border-radius: 12px; flex: none; }
+.presets button .name { flex: 1; }
+.presets button .price { color: var(--muted); white-space: nowrap; }
+.presets button.on { border-color: var(--violet); background: var(--violet-soft); color: var(--violet-dark); }
+.field > .btn { justify-self: start; }
 .choices { display: flex; flex-wrap: wrap; gap: 8px; }
 .choices button { min-height: 48px; padding: 0 14px; border-radius: 999px; background: var(--bg); border: 2px solid var(--line); font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
 .choices button.on { border-color: var(--violet); background: var(--violet-soft); color: var(--violet-dark); }

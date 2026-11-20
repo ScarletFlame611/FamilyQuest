@@ -23,6 +23,17 @@ class TaskIcon(StrEnum):
     TOOLS = "tools"
     VACUUM = "vacuum"
     COOKING = "cooking"
+    HOMEWORK = "homework"
+    READING = "reading"
+    BACKPACK = "backpack"
+    SPORT = "sport"
+    MUSIC = "music"
+    MORNING = "morning"
+    SLEEP = "sleep"
+    TEETH = "teeth"
+    WALK = "walk"
+    CALL = "call"
+    BABY = "baby"
 
 
 class TaskAction(StrEnum):

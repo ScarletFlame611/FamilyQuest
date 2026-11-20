@@ -12,6 +12,7 @@ export type Member = Schemas["MemberOut"];
 export type Task = Schemas["TaskOut"];
 export type TaskCreate = Schemas["TaskCreateIn"];
 export type TaskIcon = Schemas["TaskIcon"];
+export type AgeGroup = Schemas["AgeGroup"];
 export type ConfirmAll = Schemas["ConfirmAllOut"];
 export type Revoke = Schemas["RevokeOut"];
 export type Balance = Schemas["BalanceOut"];
