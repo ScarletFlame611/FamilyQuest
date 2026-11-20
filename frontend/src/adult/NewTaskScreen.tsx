@@ -81,83 +81,87 @@ export function NewTaskScreen() {
   return (
     <AdultLayout>
       <Title text="Новое дело" />
-      <section className="panel">
-        <div className="field">
-          Кому
-          <small>Если выбрать ребёнка, появятся готовые дела для его возраста</small>
-          <div className="choices">
-            {family?.members.map((m) => (
+      <div className="cols">
+        <section className="panel">
+          <div className="field">
+            Кому
+            <small>Если выбрать ребёнка, появятся готовые дела для его возраста</small>
+            <div className="choices">
+              {family?.members.map((m) => (
+                <button
+                  key={m.id}
+                  className={assignee === m.id ? "on" : ""}
+                  onClick={() => setAssignee(m.id)}
+                >
+                  {avatar(m.avatar)} {m.name}
+                </button>
+              ))}
               <button
-                key={m.id}
-                className={assignee === m.id ? "on" : ""}
-                onClick={() => setAssignee(m.id)}
+                className={assignee === BOARD ? "on" : ""}
+                onClick={() => setAssignee(BOARD)}
               >
-                {avatar(m.avatar)} {m.name}
+                🙋 На общую доску
               </button>
-            ))}
-            <button
-              className={assignee === BOARD ? "on" : ""}
-              onClick={() => setAssignee(BOARD)}
-            >
-              🙋 На общую доску
-            </button>
+            </div>
           </div>
-        </div>
-        {age && <Presets key={age} age={age} chosen={title} onPick={pick} />}
-        <label className="field">
-          Что сделать
-          <input
-            className="pass"
-            value={title}
-            maxLength={60}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Например: Убрать игрушки"
-          />
-        </label>
-        <label className="field">
-          Описание
-          <small>Необязательно: что именно нужно сделать</small>
-          <textarea
-            className="pass"
-            rows={3}
-            value={description}
-            maxLength={500}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </label>
-        <div className="field">
-          Иконка
-          <small>По ней дело узнает ребёнок, который ещё не читает</small>
-          <div className="icons">
-            {ICONS.map((id) => (
-              <button
-                key={id}
-                className={id === icon ? "on" : ""}
-                onClick={() => setIcon(id)}
-                aria-pressed={id === icon}
-              >
-                <span className="tile" style={{ ["--tint" as string]: TASK_ICONS[id].tint }}>
-                  {TASK_ICONS[id].emoji}
-                </span>
-                {TASK_ICONS[id].label}
-              </button>
-            ))}
+          {age && <Presets key={age} age={age} chosen={title} onPick={pick} />}
+        </section>
+        <section className="panel">
+          <label className="field">
+            Что сделать
+            <input
+              className="pass"
+              value={title}
+              maxLength={60}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Например: Убрать игрушки"
+            />
+          </label>
+          <label className="field">
+            Описание
+            <small>Необязательно: что именно нужно сделать</small>
+            <textarea
+              className="pass"
+              rows={3}
+              value={description}
+              maxLength={500}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </label>
+          <div className="field">
+            Иконка
+            <small>По ней дело узнает ребёнок, который ещё не читает</small>
+            <div className="icons">
+              {ICONS.map((id) => (
+                <button
+                  key={id}
+                  className={id === icon ? "on" : ""}
+                  onClick={() => setIcon(id)}
+                  aria-pressed={id === icon}
+                >
+                  <span className="tile" style={{ ["--tint" as string]: TASK_ICONS[id].tint }}>
+                    {TASK_ICONS[id].emoji}
+                  </span>
+                  {TASK_ICONS[id].label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-        <label className="field">
-          Цена в баллах
-          <input
-            className="pass"
-            inputMode="numeric"
-            value={points}
-            onChange={(e) => setPoints(e.target.value.replace(/\D/g, ""))}
-          />
-        </label>
-        <div className="err">{hint}</div>
-        <ActionButton state={create.state} className="cta violet" onClick={() => void submit()}>
-          Добавить дело
-        </ActionButton>
-      </section>
+          <label className="field">
+            Цена в баллах
+            <input
+              className="pass"
+              inputMode="numeric"
+              value={points}
+              onChange={(e) => setPoints(e.target.value.replace(/\D/g, ""))}
+            />
+          </label>
+          <div className="err">{hint}</div>
+          <ActionButton state={create.state} className="cta violet" onClick={() => void submit()}>
+            Добавить дело
+          </ActionButton>
+        </section>
+      </div>
     </AdultLayout>
   );
 }

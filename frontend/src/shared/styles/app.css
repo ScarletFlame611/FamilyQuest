@@ -147,6 +147,30 @@ h1, h2 { margin: 0; }
 .demo { display: flex; align-items: center; justify-content: flex-end; gap: 10px; background: var(--bg); border-radius: 18px; padding: 12px; }
 .demo .grown { box-shadow: 0 0 0 4px var(--amber-soft), 0 0 0 6px var(--amber); }
 
+/* Два связанных раздела одного экрана: на телефоне друг под другом, на ноутбуке рядом */
+.cols { display: grid; gap: 16px; align-items: start; }
+.col { display: grid; gap: 16px; align-content: start; min-width: 0; }
+
+/* На ноутбуке экран не сжимается в телефонную колонку: страница занимает ширину
+   до 1200 px, карточки раскладываются в несколько колонок, разделы встают рядом */
+@media (min-width: 760px) {
+  .list:not(.rows) { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .shop { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+}
+@media (min-width: 900px) {
+  .app { max-width: 1200px; padding-left: 40px; padding-right: 40px; gap: 20px; }
+  .app.narrow { max-width: 480px; }
+  .tabs-in { max-width: 760px; }
+  .cols { grid-template-columns: 1fr 1fr; gap: 32px; }
+  /* Одиночная кнопка внизу экрана взрослого не тянется на всю ширину страницы */
+  .adult > .cta { align-self: flex-start; width: auto; min-width: 320px; padding: 0 32px; }
+  .adult > .panel:not(.full) { width: 100%; max-width: 760px; }
+  /* Экран одного дела у ребёнка остаётся крупным и по центру */
+  .app:not(.adult) > .cta, .app:not(.adult) > .state { align-self: center; max-width: 520px; }
+  .sheet { align-items: center; }
+  .sheet-card { max-width: 480px; border-radius: 26px; padding-bottom: 22px; }
+}
+
 @media (max-width: 380px) { .hd { gap: 6px; } .player { gap: 8px; } .av { width: 44px; height: 44px; font-size: 27px; } .player b { font-size: 18px; } .bal { padding: 0 10px 0 8px; font-size: 20px; } .grown { padding: 0 10px; gap: 4px; } }
 @media (max-width: 339px) { .grown span { display: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

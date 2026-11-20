@@ -26,7 +26,7 @@ export function LoginScreen() {
   }
 
   return (
-    <div className="app notabs adult">
+    <div className="app notabs adult narrow">
       <div className="title">
         <h1>FamilyQuest</h1>
         <p>Вход для взрослых</p>

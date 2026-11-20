@@ -86,7 +86,7 @@ export function SessionsScreen() {
   return (
     <AdultLayout>
       <Title text="Журнал детского режима" hint="Что делал ребёнок и через сколько секунд от начала сессии" />
-      <section className="panel">
+      <section className="panel full">
         <LoadState state={loaded} />
         {sessions && !sessions.length && <p>Детский режим ещё не включали.</p>}
         {sessions?.map((s) => <SessionRow key={s.id} session={s} />)}

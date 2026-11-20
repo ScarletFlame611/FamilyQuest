@@ -106,7 +106,7 @@ export function HistoryScreen() {
       {error && <div className="err">{error}</div>}
       {!entries && !error && <div className="note">Загружаем историю…</div>}
       {entries && !shown.length && <div className="note">Таких записей пока нет.</div>}
-      <div className="list">
+      <div className="list rows">
         {shown.map((e) => (
           <div key={e.id} className="kcard">
             <span className="chip me">

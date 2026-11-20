@@ -19,7 +19,7 @@ export function GoalView({
   const total = goal.contributions.reduce((sum, c) => sum + c.points, 0);
   const look = GOAL_ICONS[goal.icon];
   return (
-    <>
+    <div className="cols">
       <div className="goal">
         <Tile emoji={look.emoji} tint={look.tint} hero />
         <h2>{goal.title}</h2>
@@ -31,50 +31,52 @@ export function GoalView({
         </div>
         {goal.reached && <span className="chip ok">🎉 Копилка полная!</span>}
       </div>
-      <div className="sub">{child ? "Кто сколько заработал" : "Кто сколько положил"}</div>
-      <div className="members">
-        {rows.map((c) => {
-          const mine = c.member_id === viewerId;
-          return (
-            <div key={c.member_id} className={`mem ${mine ? "me" : ""}`}>
-              <div className="av">{avatar(c.avatar)}</div>
-              <div>
-                <div className="who">
-                  {mine ? "Ты" : c.name}
-                  {!child && total > 0 && ` · ${Math.round((c.points / total) * 100)}%`}
+      <div className="col">
+        <div className="sub">{child ? "Кто сколько заработал" : "Кто сколько положил"}</div>
+        <div className="members">
+          {rows.map((c) => {
+            const mine = c.member_id === viewerId;
+            return (
+              <div key={c.member_id} className={`mem ${mine ? "me" : ""}`}>
+                <div className="av">{avatar(c.avatar)}</div>
+                <div>
+                  <div className="who">
+                    {mine ? "Ты" : c.name}
+                    {!child && total > 0 && ` · ${Math.round((c.points / total) * 100)}%`}
+                  </div>
+                  <div className="bar thin">
+                    <div style={{ width: `${Math.round((c.points / max) * 100)}%` }} />
+                  </div>
                 </div>
-                <div className="bar thin">
-                  <div style={{ width: `${Math.round((c.points / max) * 100)}%` }} />
-                </div>
+                <span className="n">{c.points}</span>
               </div>
-              <span className="n">{c.points}</span>
+            );
+          })}
+          {!child && (
+            <div className="mem">
+              <span />
+              <div className="who">Всего</div>
+              <span className="n">{total}</span>
             </div>
-          );
-        })}
-        {!child && (
-          <div className="mem">
-            <span />
-            <div className="who">Всего</div>
-            <span className="n">{total}</span>
+          )}
+        </div>
+        <div className="sub">Недавно</div>
+        {!goal.feed.length && (
+          <div className="note">
+            {child ? "Сделай дело — и звёздочки появятся тут" : "Пока никто ничего не положил"}
           </div>
         )}
-      </div>
-      <div className="sub">Недавно</div>
-      {!goal.feed.length && (
-        <div className="note">
-          {child ? "Сделай дело — и звёздочки появятся тут" : "Пока никто ничего не положил"}
+        <div className="feed">
+          {goal.feed.slice(0, 4).map((item) => (
+            <div key={item.created_at + item.member_id}>
+              <span>{avatar(item.avatar)}</span>
+              {child ? `${item.name}: ${item.title.toLowerCase()}` : `${item.name} · ${item.title}`},{" "}
+              {item.points > 0 ? "+" : ""}
+              {item.points}
+            </div>
+          ))}
         </div>
-      )}
-      <div className="feed">
-        {goal.feed.slice(0, 4).map((item) => (
-          <div key={item.created_at + item.member_id}>
-            <span>{avatar(item.avatar)}</span>
-            {child ? `${item.name}: ${item.title.toLowerCase()}` : `${item.name} · ${item.title}`},{" "}
-            {item.points > 0 ? "+" : ""}
-            {item.points}
-          </div>
-        ))}
       </div>
-    </>
+    </div>
   );
 }

@@ -26,7 +26,7 @@ const SECTION_OF: Record<string, string> = {
   "/child-mode": "/more",
 };
 
-export function AdultLayout({ children, wide }: { children: ReactNode; wide?: boolean }) {
+export function AdultLayout({ children }: { children: ReactNode }) {
   const path = usePath();
   const { data: me } = useLoad(api.me);
   const { data: balance, reload } = useLoad(api.balance);
@@ -35,7 +35,7 @@ export function AdultLayout({ children, wide }: { children: ReactNode; wide?: bo
 
   return (
     <>
-      <div className={`app adult ${wide ? "wide" : ""}`}>
+      <div className="app adult">
         <header className="hd">
           {section ? (
             <>

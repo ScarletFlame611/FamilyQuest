@@ -86,33 +86,41 @@ export function HomeScreen() {
   return (
     <AdultLayout>
       <Title text="Проверка" hint="Дела детей ждут вашего подтверждения, награды — выдачи" />
-      <div className="sub">Ждут подтверждения</div>
-      <LoadState state={tasks} />
-      {tasks.data && !tasks.data.length && <div className="note">Нет дел, которые ждут проверки.</div>}
-      <div className="list">
-        {tasks.data?.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            viewerId={me?.id ?? null}
-            viewerIsAdult
-            avatars={avatars}
-            onChanged={tasks.reload}
-          />
-        ))}
+      <div className="cols">
+        <div className="col">
+          <div className="sub">Ждут подтверждения</div>
+          <LoadState state={tasks} />
+          {tasks.data && !tasks.data.length && (
+            <div className="note">Нет дел, которые ждут проверки.</div>
+          )}
+          <div className="list">
+            {tasks.data?.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                viewerId={me?.id ?? null}
+                viewerIsAdult
+                avatars={avatars}
+                onChanged={tasks.reload}
+              />
+            ))}
+          </div>
+          {tasks.data && <ConfirmAllPanel tasks={tasks.data} onDone={tasks.reload} />}
+        </div>
+        <div className="col">
+          <div className="sub">Купленные награды</div>
+          <LoadState state={purchases} />
+          {purchases.data && !purchases.data.length && (
+            <div className="note">Нет покупок, которые нужно выдать.</div>
+          )}
+          <div className="list">
+            {purchases.data?.map((p) => (
+              <PurchaseCard key={p.id} purchase={p} onChanged={purchases.reload} />
+            ))}
+          </div>
+          <MinusSection />
+        </div>
       </div>
-      {tasks.data && <ConfirmAllPanel tasks={tasks.data} onDone={tasks.reload} />}
-      <div className="sub">Купленные награды</div>
-      <LoadState state={purchases} />
-      {purchases.data && !purchases.data.length && (
-        <div className="note">Нет покупок, которые нужно выдать.</div>
-      )}
-      <div className="list">
-        {purchases.data?.map((p) => (
-          <PurchaseCard key={p.id} purchase={p} onChanged={purchases.reload} />
-        ))}
-      </div>
-      <MinusSection />
       <button className="cta violet" onClick={() => navigate("/child-mode")}>
         🧒 Включить детский режим
       </button>

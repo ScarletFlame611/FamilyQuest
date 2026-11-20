@@ -172,27 +172,31 @@ export function RewardsScreen() {
   return (
     <AdultLayout>
       <Title text="Награды" hint="Что дети могут купить за баллы" />
-      <NewReward onCreated={rewards.reload} />
-      <div className="sub">В каталоге у детей</div>
-      <LoadState state={rewards} />
-      {rewards.data && !shown.length && (
-        <div className="note">Пока нет наград. Добавьте первую — дети увидят её сразу.</div>
-      )}
-      <div className="list">
-        {shown.map((r) => (
-          <RewardRow key={`${r.id}:${r.title}:${r.price}`} reward={r} onChanged={rewards.reload} />
-        ))}
-      </div>
-      {hidden.length > 0 && (
-        <>
-          <div className="sub">Скрытые</div>
+      <div className="cols">
+        <NewReward onCreated={rewards.reload} />
+        <div className="col">
+          <div className="sub">В каталоге у детей</div>
+          <LoadState state={rewards} />
+          {rewards.data && !shown.length && (
+            <div className="note">Пока нет наград. Добавьте первую — дети увидят её сразу.</div>
+          )}
           <div className="list">
-            {hidden.map((r) => (
-              <RewardRow key={r.id} reward={r} onChanged={rewards.reload} />
+            {shown.map((r) => (
+              <RewardRow key={`${r.id}:${r.title}:${r.price}`} reward={r} onChanged={rewards.reload} />
             ))}
           </div>
-        </>
-      )}
+          {hidden.length > 0 && (
+            <>
+              <div className="sub">Скрытые</div>
+              <div className="list">
+                {hidden.map((r) => (
+                  <RewardRow key={r.id} reward={r} onChanged={rewards.reload} />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </AdultLayout>
   );
 }
