@@ -6,11 +6,15 @@ from app.core.idempotency import IdempotencyKeyHeader, run_idempotent
 from app.deps import AdultDep, MemberDep, SessionDep
 from app.modules.families import service as families
 from app.modules.ledger import service
+from app.modules.ledger.enums import EntryKind
 from app.modules.ledger.schemas import BalanceOut, EntryOut, MemberBalanceOut, WriteOffIn
 from app.modules.rewards import service as rewards
 from app.modules.tasks import service as tasks
 
 router = APIRouter(prefix="/api", tags=["ledger"])
+
+# У этих записей в заметке лежит причина, которую взрослый написал для ребёнка
+REASONED_KINDS = (EntryKind.REVERSAL, EntryKind.WRITE_OFF)
 
 
 def _balance(current: service.Balance) -> BalanceOut:
@@ -70,6 +74,7 @@ async def ledger(member: MemberDep, session: SessionDep) -> list[EntryOut]:
             or (purchases.get(entry.purchase_id) if entry.purchase_id else None)
             or entry.note
             or "",
+            reason=entry.note if entry.kind in REASONED_KINDS else None,
             created_at=entry.created_at,
         )
         for entry in entries

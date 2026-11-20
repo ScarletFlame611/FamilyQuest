@@ -112,6 +112,11 @@ export function TaskCard({
             {added} {task.created_by_name}
           </span>
         )}
+        {/* Дело вернули после отметки или отменили подтверждение: ребёнок видит почему,
+            а после новой отметки сервер очищает причину, и строка пропадает */}
+        {task.status === "assigned" && task.reject_reason && (
+          <span className="who-gave">↩️ Вернули: {task.reject_reason}</span>
+        )}
       </span>
       {side}
     </button>

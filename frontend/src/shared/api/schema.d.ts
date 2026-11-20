@@ -845,6 +845,8 @@ export interface components {
             amount: number;
             /** Label */
             label: string;
+            /** Reason */
+            reason: string | null;
             /**
              * Created At
              * Format: date-time

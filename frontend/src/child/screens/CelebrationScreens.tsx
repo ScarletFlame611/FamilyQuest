@@ -65,8 +65,15 @@ export function BoughtScreen({ id }: { id: string }) {
   );
 }
 
+// Списания за последнюю неделю: ребёнку видно, куда делись звёздочки и почему
+const RECENT_MS = 7 * 24 * 60 * 60 * 1000;
+
 export function StarsScreen() {
   const { balance } = useChild();
+  const { data: history } = useLoad(api.ledger);
+  const taken = (history ?? [])
+    .filter((e) => e.reason && Date.now() - Date.parse(e.created_at) < RECENT_MS)
+    .slice(0, 2);
   const [back] = useState(starsReturnPath);
   useAutoReturn(back, 3500);
   return (
@@ -84,6 +91,12 @@ export function StarsScreen() {
       <div className="note">
         {(balance && minusNote(balance.balance)) ?? "Делай дела, и звёздочек станет больше"}
       </div>
+      {taken.map((e) => (
+        <div key={e.created_at} className="note">
+          {e.amount > 0 ? "+" : ""}
+          {e.amount} ⭐{e.kind === "reversal" ? ` за «${e.label}»` : ""}: {e.reason}
+        </div>
+      ))}
       <AutoReturnTimer seconds={3.5} />
     </div>
   );

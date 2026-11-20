@@ -243,3 +243,18 @@ async def test_revoke_racing_purchase_keeps_balance_consistent(
         select(func.count()).where(LedgerEntry.kind == EntryKind.REVERSAL)
     )
     assert reversals == 10
+
+
+@pytest.mark.us27
+async def test_child_history_shows_reason_of_revoke(client: AsyncClient, demo: DemoFamily):
+    toys, mama, masha = await confirmed_toys(client, demo)
+    await revoke(client, mama, toys)
+    history = (await client.get("/api/ledger", headers=bearer(masha))).json()
+    latest, accrual = history[0], history[1]
+    assert (latest["kind"], latest["amount"], latest["label"], latest["reason"]) == (
+        "reversal",
+        -10,
+        "Убрать игрушки",
+        REASON,
+    )
+    assert (accrual["kind"], accrual["reason"]) == ("accrual", None)

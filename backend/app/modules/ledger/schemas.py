@@ -18,6 +18,8 @@ class EntryOut(BaseModel):
     kind: EntryKind
     amount: int
     label: str
+    # Почему взрослый отменил подтверждение или списал минус; у остальных записей пусто
+    reason: str | None
     created_at: datetime
 
 
