@@ -14,6 +14,8 @@
 .icons button { display: grid; justify-items: center; gap: 4px; padding: 8px 4px; border-radius: 18px; border: 2px solid transparent; font-size: 12px; color: var(--muted); }
 .icons button .tile { width: 52px; height: 52px; font-size: 30px; border-radius: 16px; }
 .icons button.on { border-color: var(--violet); background: var(--violet-soft); color: var(--violet-dark); }
+/* Подписи наград длиннее подписей дел: «Фломастеры» не помещается в узкую ячейку */
+.icons.roomy { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); }
 .choices { display: flex; flex-wrap: wrap; gap: 8px; }
 .choices button { min-height: 48px; padding: 0 14px; border-radius: 999px; background: var(--bg); border: 2px solid var(--line); font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
 .choices button.on { border-color: var(--violet); background: var(--violet-soft); color: var(--violet-dark); }

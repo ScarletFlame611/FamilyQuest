@@ -54,7 +54,7 @@ function NewReward({ onCreated }: { onCreated: () => void }) {
       </label>
       <div className="field">
         Иконка
-        <div className="icons">
+        <div className="icons roomy">
           {ICONS.map((id) => (
             <button
               key={id}
