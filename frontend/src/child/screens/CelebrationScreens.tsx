@@ -4,7 +4,7 @@ import { api } from "../../shared/api/endpoints";
 import { REWARD_ICONS, TASK_ICONS } from "../../shared/catalog";
 import { navigate } from "../../shared/lib/router";
 import { useLoad } from "../../shared/lib/useLoad";
-import { starsReturnPath, useChild } from "../context";
+import { minusNote, starsReturnPath, useChild } from "../context";
 import { AutoReturnTimer, PointsChip, Tile } from "../parts";
 
 const BURST = [
@@ -79,9 +79,11 @@ export function StarsScreen() {
           </span>
         ))}
       </div>
-      <div className="bignum">{balance?.available ?? ""}</div>
+      <div className="bignum">{balance ? Math.max(0, balance.available) : ""}</div>
       <h1>Столько звёздочек у тебя</h1>
-      <div className="note">Делай дела, и звёздочек станет больше</div>
+      <div className="note">
+        {(balance && minusNote(balance.balance)) ?? "Делай дела, и звёздочек станет больше"}
+      </div>
       <AutoReturnTimer seconds={3.5} />
     </div>
   );

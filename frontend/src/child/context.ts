@@ -62,6 +62,17 @@ export function starsReturnPath(): string {
   return starsReturn;
 }
 
+// Минус бывает после отмены подтверждения уже потраченных баллов. Ребёнку показываем
+// не число со знаком и не «долг», а сколько звёздочек его закроют
+export function minusNote(balance: number): string | null {
+  if (balance >= 0) return null;
+  const n = -balance;
+  if (n === 1) return "Следующая звёздочка закроет минус";
+  // «21 звёздочка» согласуется в единственном числе: «следующая … закроет»
+  if (n % 10 === 1 && n % 100 !== 11) return `Следующая ${n} ${stars(n)} закроет минус`;
+  return `Следующие ${n} ${stars(n)} закроют минус`;
+}
+
 export function stars(n: number): string {
   const a = n % 10;
   const b = n % 100;

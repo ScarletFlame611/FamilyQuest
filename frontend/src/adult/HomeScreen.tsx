@@ -10,6 +10,7 @@ import { useAvatars } from "../shared/ui/Kanban";
 import { PurchaseCard, TaskCard } from "../shared/ui/TaskCard";
 import { Title } from "../shared/ui/layout";
 import { AdultLayout } from "./AdultLayout";
+import { MinusSection } from "./MinusSection";
 
 function totalsByChild(tasks: Task[]): [string, number][] {
   const totals = new Map<string, number>();
@@ -110,6 +111,7 @@ export function HomeScreen() {
           <PurchaseCard key={p.id} purchase={p} onChanged={purchases.reload} />
         ))}
       </div>
+      <MinusSection />
       <button className="cta violet" onClick={() => navigate("/child-mode")}>
         🧒 Включить детский режим
       </button>

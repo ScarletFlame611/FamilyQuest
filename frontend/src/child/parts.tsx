@@ -23,7 +23,8 @@ const ARROW = (
 
 function BalanceChip() {
   const { balance } = useChild();
-  const value = balance?.available ?? 0;
+  // Отрицательного числа на счётчике ребёнок не видит: что такое минус, объясняет экран звёздочек
+  const value = Math.max(0, balance?.available ?? 0);
   return (
     <button
       className="bal"

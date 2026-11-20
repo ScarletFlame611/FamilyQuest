@@ -31,6 +31,10 @@ class AlreadyReversedError(ConflictError):
     pass
 
 
+class NothingToWriteOffError(ConflictError):
+    pass
+
+
 @dataclass(frozen=True)
 class Balance:
     balance: int
@@ -221,6 +225,33 @@ async def spend(
 ) -> None:
     """Превращает резерв в окончательное списание с баланса."""
     await _take_from_reserve(session, member_id, amount, purchase_id, EntryKind.SPEND)
+
+
+async def write_off_negative(
+    session: AsyncSession, member_id: uuid.UUID, reason: str, author_member_id: uuid.UUID
+) -> Balance:
+    """Списывает минус на балансе отдельной записью журнала: баланс становится нулевым."""
+    account = await _lock_account(session, member_id)
+    if account.balance >= 0:
+        raise NothingToWriteOffError("Списывать нечего: баланс не в минусе")
+    session.add(
+        LedgerEntry(
+            account_id=account.id,
+            kind=EntryKind.WRITE_OFF,
+            amount=-account.balance,
+            created_by_member_id=author_member_id,
+            note=reason,
+        )
+    )
+    account.balance = 0
+    await session.flush()
+    return Balance(balance=account.balance, reserved=account.reserved)
+
+
+async def family_balances(session: AsyncSession, family_id: uuid.UUID) -> dict[uuid.UUID, Balance]:
+    """Возвращает баланс и резерв каждого участника семьи из сохранённого кэша."""
+    accounts = await session.scalars(select(Account).where(Account.family_id == family_id))
+    return {a.member_id: Balance(balance=a.balance, reserved=a.reserved) for a in accounts}
 
 
 async def get_balance(session: AsyncSession, member_id: uuid.UUID) -> Balance:

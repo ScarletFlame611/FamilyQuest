@@ -10,6 +10,7 @@ import type {
   Goal,
   GoalCreate,
   Me,
+  MemberBalance,
   Purchase,
   RewardAdmin,
   RewardCreate,
@@ -96,6 +97,12 @@ export const api = {
     }),
 
   balance: () => request<Balance>("GET", "/api/balance"),
+  balances: () => request<MemberBalance[]>("GET", "/api/balances"),
+  writeOff: (key: string, memberId: string, reason: string) =>
+    request<Balance>("POST", `/api/members/${memberId}/write-off`, {
+      body: { reason },
+      idempotencyKey: key,
+    }),
   ledger: () => request<Entry[]>("GET", "/api/ledger"),
 
   rewards: () => request<RewardOffer[]>("GET", "/api/rewards"),

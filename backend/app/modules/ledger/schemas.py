@@ -1,6 +1,8 @@
+import uuid
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, StringConstraints
 
 from app.modules.ledger.enums import EntryKind
 
@@ -17,3 +19,12 @@ class EntryOut(BaseModel):
     amount: int
     label: str
     created_at: datetime
+
+
+class MemberBalanceOut(BalanceOut):
+    member_id: uuid.UUID
+
+
+class WriteOffIn(BaseModel):
+    # Причина остаётся в журнале: потом по ней видно, почему минус простили
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]

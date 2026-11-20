@@ -497,6 +497,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Family Balances */
+        get: operations["family_balances_api_balances_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{member_id}/write-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Write Off */
+        post: operations["write_off_api_members__member_id__write_off_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ledger": {
         parameters: {
             query?: never;
@@ -803,7 +837,7 @@ export interface components {
          * EntryKind
          * @enum {string}
          */
-        EntryKind: "accrual" | "reserve" | "release" | "spend" | "reversal";
+        EntryKind: "accrual" | "reserve" | "release" | "spend" | "reversal" | "write_off";
         /** EntryOut */
         EntryOut: {
             kind: components["schemas"]["EntryKind"];
@@ -935,6 +969,20 @@ export interface components {
             avatar: string;
             age_group: components["schemas"]["AgeGroup"] | null;
             family: components["schemas"]["FamilyBriefOut"];
+        };
+        /** MemberBalanceOut */
+        MemberBalanceOut: {
+            /** Balance */
+            balance: number;
+            /** Reserved */
+            reserved: number;
+            /** Available */
+            available: number;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
         };
         /** MemberOut */
         MemberOut: {
@@ -1238,6 +1286,11 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** WriteOffIn */
+        WriteOffIn: {
+            /** Reason */
+            reason: string;
         };
     };
     responses: never;
@@ -2131,6 +2184,63 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BalanceOut"];
+                };
+            };
+        };
+    };
+    family_balances_api_balances_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberBalanceOut"][];
+                };
+            };
+        };
+    };
+    write_off_api_members__member_id__write_off_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WriteOffIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BalanceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
