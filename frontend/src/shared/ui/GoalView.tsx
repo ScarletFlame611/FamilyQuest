@@ -14,6 +14,9 @@ export function GoalView({
   child?: boolean;
 }) {
   const max = Math.max(1, ...goal.contributions.map((c) => c.points));
+  // Взрослому — таблица вклада от большего к меньшему с долей; ребёнку — порядок семьи, как в прототипе
+  const rows = child ? goal.contributions : [...goal.contributions].sort((a, b) => b.points - a.points);
+  const total = goal.contributions.reduce((sum, c) => sum + c.points, 0);
   const look = GOAL_ICONS[goal.icon];
   return (
     <>
@@ -30,13 +33,16 @@ export function GoalView({
       </div>
       <div className="sub">{child ? "Кто сколько заработал" : "Кто сколько положил"}</div>
       <div className="members">
-        {goal.contributions.map((c) => {
+        {rows.map((c) => {
           const mine = c.member_id === viewerId;
           return (
             <div key={c.member_id} className={`mem ${mine ? "me" : ""}`}>
               <div className="av">{avatar(c.avatar)}</div>
               <div>
-                <div className="who">{mine ? "Ты" : c.name}</div>
+                <div className="who">
+                  {mine ? "Ты" : c.name}
+                  {!child && total > 0 && ` · ${Math.round((c.points / total) * 100)}%`}
+                </div>
                 <div className="bar thin">
                   <div style={{ width: `${Math.round((c.points / max) * 100)}%` }} />
                 </div>
@@ -45,6 +51,13 @@ export function GoalView({
             </div>
           );
         })}
+        {!child && (
+          <div className="mem">
+            <span />
+            <div className="who">Всего</div>
+            <span className="n">{total}</span>
+          </div>
+        )}
       </div>
       <div className="sub">Недавно</div>
       {!goal.feed.length && (
