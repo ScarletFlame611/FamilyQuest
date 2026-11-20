@@ -5,6 +5,8 @@ import { AdultTasksScreen } from "./adult/AdultTasksScreen";
 import { ChildModeScreen } from "./adult/ChildModeScreen";
 import { HistoryScreen } from "./adult/HistoryScreen";
 import { HomeScreen } from "./adult/HomeScreen";
+import { InviteScreen } from "./adult/InviteScreen";
+import { JoinScreen } from "./adult/JoinScreen";
 import { KanbanScreen } from "./adult/KanbanScreen";
 import { LoginScreen } from "./adult/LoginScreen";
 import { MoreScreen } from "./adult/MoreScreen";
@@ -25,6 +27,7 @@ const ADULT_SCREENS: Record<string, () => JSX.Element> = {
   "/more": MoreScreen,
   "/rewards": RewardsScreen,
   "/history": HistoryScreen,
+  "/invite": InviteScreen,
   "/pin": PinScreen,
   "/child-mode": ChildModeScreen,
   "/sessions": SessionsScreen,
@@ -41,15 +44,20 @@ export function App() {
   const role = session?.role ?? null;
   // Адрес из строки браузера ничего не решает: детская сессия всегда остаётся
   // в детском режиме, а взрослый экран открывается только с токеном взрослого
+  // Без входа доступны только страница входа и приглашение по ссылке
   const allowed =
-    role === "child" ? path.startsWith("/kid") : role === "adult" ? path in ADULT_SCREENS : path === "/login";
+    role === "child"
+      ? path.startsWith("/kid")
+      : role === "adult"
+        ? path in ADULT_SCREENS
+        : path === "/login" || path.startsWith("/join/");
 
   useEffect(() => {
     if (!allowed) navigate(homeOf(role), { replace: true });
   }, [allowed, role]);
 
   if (role === "child") return <ChildApp />;
-  if (role === null) return <LoginScreen />;
+  if (role === null) return path.startsWith("/join/") ? <JoinScreen /> : <LoginScreen />;
   const Screen = ADULT_SCREENS[path] ?? HomeScreen;
   return <Screen />;
 }

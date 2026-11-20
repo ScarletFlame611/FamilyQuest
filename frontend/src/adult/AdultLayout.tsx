@@ -20,6 +20,7 @@ const SECTION_OF: Record<string, string> = {
   "/tasks/new": "/more",
   "/rewards": "/more",
   "/history": "/more",
+  "/invite": "/more",
   "/pin": "/more",
   "/sessions": "/more",
   "/child-mode": "/more",

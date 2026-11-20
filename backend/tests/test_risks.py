@@ -32,6 +32,7 @@ ADULT_ONLY = {
     ("GET", "/api/members/{member_id}/ledger.csv"),
     ("PUT", "/api/family/pin"),
     ("POST", "/api/family/children"),
+    ("POST", "/api/family/invites"),
     ("POST", "/api/child-mode/start"),
     ("GET", "/api/child-mode/sessions"),
     ("GET", "/api/child-mode/sessions/{session_id}/events"),

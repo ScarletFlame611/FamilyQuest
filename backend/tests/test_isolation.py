@@ -28,11 +28,16 @@ def _calls(dependant) -> set:
     return found
 
 
+# Приглашение открывается по секретному токену из ссылки, а не по токену доступа:
+# его видит любой, у кого есть ссылка, и семья здесь берётся из самого приглашения
+BY_SECRET_LINK = {"/api/auth/invites/{token}", "/api/auth/invites/{token}/accept"}
+
+
 def routes_with_ids() -> list[tuple[str, str, bool]]:
     return sorted(
         (method, route.path, require_child in _calls(route.dependant))
         for route in app.routes
-        if isinstance(route, APIRoute) and "{" in route.path
+        if isinstance(route, APIRoute) and "{" in route.path and route.path not in BY_SECRET_LINK
         for method in route.methods
     )
 

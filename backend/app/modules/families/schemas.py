@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 
@@ -37,3 +38,9 @@ class FamilyOut(FamilyBriefOut):
 class SetPinIn(BaseModel):
     current_password: str = Field(max_length=200)
     pin: str = Field(max_length=8)
+
+
+class InviteOut(BaseModel):
+    # Показывается взрослому один раз: после этого восстановить ссылку нельзя, только создать новую
+    token: str
+    expires_at: datetime

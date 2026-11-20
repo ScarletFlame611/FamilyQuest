@@ -89,6 +89,23 @@ async def register(
     return await issue_tokens(session, member_id, family_id, MemberRole.ADULT)
 
 
+async def accept_invite(
+    session: AsyncSession, token: str, email: str, password: str, name: str, avatar: str
+) -> TokenPair:
+    """Создаёт аккаунт по приглашению, добавляет взрослого в семью пригласившего и выдаёт токены."""
+    # Ссылку проверяем до создания аккаунта, чтобы не хешировать пароль впустую
+    await families.get_invite(session, token)
+    try:
+        async with session.begin_nested():
+            user_id = await create_user(session, email, password, name)
+    except IntegrityError as error:
+        if "uq_users_email_lower" not in str(error.orig):
+            raise
+        raise EmailTakenError("Эта почта уже зарегистрирована") from None
+    membership = await families.join_by_invite(session, token, user_id, name, avatar)
+    return await issue_tokens(session, membership.member_id, membership.family_id, MemberRole.ADULT)
+
+
 async def find_user_id_by_email(session: AsyncSession, email: str) -> uuid.UUID | None:
     """Ищет аккаунт по почте без учёта регистра."""
     return await session.scalar(

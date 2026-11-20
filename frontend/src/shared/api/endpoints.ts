@@ -1,6 +1,7 @@
 import { getSession, setSession } from "../session/session";
 import { request, requestFile } from "./client";
 import type {
+  AcceptInvite,
   Balance,
   ChildEventType,
   ChildSession,
@@ -9,6 +10,8 @@ import type {
   Family,
   Goal,
   GoalCreate,
+  InviteInfo,
+  InviteLink,
   Me,
   MemberBalance,
   Purchase,
@@ -48,6 +51,20 @@ export const api = {
       }).catch(() => undefined);
     }
   },
+
+  invite: (token: string) =>
+    request<InviteInfo>("GET", `/api/auth/invites/${encodeURIComponent(token)}`, { auth: false }),
+
+  async acceptInvite(token: string, body: AcceptInvite) {
+    adultSession(
+      await request<Tokens>("POST", `/api/auth/invites/${encodeURIComponent(token)}/accept`, {
+        body,
+        auth: false,
+      }),
+    );
+  },
+
+  createInvite: () => request<InviteLink>("POST", "/api/family/invites"),
 
   me: () => request<Me>("GET", "/api/me"),
   family: () => request<Family>("GET", "/api/family"),

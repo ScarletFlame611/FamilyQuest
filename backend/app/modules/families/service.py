@@ -1,5 +1,6 @@
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from itertools import pairwise
 
 from sqlalchemy import delete, select
@@ -7,19 +8,44 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import now_utc
 from app.core.errors import (
+    ConflictError,
     InvalidInputError,
     NotFoundError,
     TooManyAttemptsError,
     UnauthorizedError,
 )
-from app.core.security import hash_secret, verify_secret
+from app.core.security import hash_refresh_token, hash_secret, new_refresh_token, verify_secret
 from app.modules.families.enums import AgeGroup, MemberRole
-from app.modules.families.models import Family, Member
+from app.modules.families.models import Family, Invite, Member
 from app.modules.ledger import service as ledger
 
 
 class MemberNotFoundError(NotFoundError):
     pass
+
+
+class InviteNotFoundError(NotFoundError):
+    pass
+
+
+class InviteUnavailableError(ConflictError):
+    pass
+
+
+INVITE_TTL = timedelta(hours=48)
+
+
+@dataclass(frozen=True)
+class InviteLink:
+    token: str
+    expires_at: datetime
+
+
+@dataclass(frozen=True)
+class InviteInfo:
+    family_name: str
+    invited_by: str
+    expires_at: datetime
 
 
 @dataclass(frozen=True)
@@ -252,3 +278,54 @@ async def member_exists(session: AsyncSession, family_id: uuid.UUID, member_id: 
         select(Member.id).where(Member.id == member_id, Member.family_id == family_id)
     )
     return found is not None
+
+
+async def create_invite(
+    session: AsyncSession, family_id: uuid.UUID, adult_member_id: uuid.UUID
+) -> InviteLink:
+    """Создаёт одноразовую ссылку для взрослого на 48 часов; в базе остаётся только хеш."""
+    # Токен того же вида, что refresh-токен: 256 случайных бит, перебором не подобрать
+    token = new_refresh_token()
+    invite = Invite(
+        family_id=family_id,
+        token_hash=hash_refresh_token(token),
+        created_by_member_id=adult_member_id,
+        expires_at=now_utc() + INVITE_TTL,
+    )
+    session.add(invite)
+    await session.flush()
+    return InviteLink(token=token, expires_at=invite.expires_at)
+
+
+async def _valid_invite(session: AsyncSession, token: str, lock: bool) -> Invite:
+    query = select(Invite).where(Invite.token_hash == hash_refresh_token(token))
+    invite = await session.scalar(query.with_for_update() if lock else query)
+    if invite is None:
+        raise InviteNotFoundError("Приглашение не найдено. Попросите прислать новую ссылку")
+    if invite.used_at is not None:
+        raise InviteUnavailableError("По этой ссылке уже присоединились. Попросите новую")
+    if invite.expires_at <= now_utc():
+        raise InviteUnavailableError("Ссылка устарела. Попросите прислать новую")
+    return invite
+
+
+async def get_invite(session: AsyncSession, token: str) -> InviteInfo:
+    """Показывает, в какую семью и от кого приглашение, если ссылка ещё действует."""
+    invite = await _valid_invite(session, token, lock=False)
+    family = await session.get_one(Family, invite.family_id)
+    author = await session.get_one(Member, invite.created_by_member_id)
+    return InviteInfo(family_name=family.name, invited_by=author.name, expires_at=invite.expires_at)
+
+
+async def join_by_invite(
+    session: AsyncSession, token: str, user_id: uuid.UUID, name: str, avatar: str
+) -> Membership:
+    """Добавляет взрослого в семью из приглашения и гасит ссылку; повторно она не сработает."""
+    # Строка приглашения блокируется: две одновременные регистрации по одной ссылке
+    # не превратятся в двух новых взрослых
+    invite = await _valid_invite(session, token, lock=True)
+    member_id = await add_adult(session, invite.family_id, user_id, name, avatar)
+    invite.used_at = now_utc()
+    invite.used_by_member_id = member_id
+    await session.flush()
+    return Membership(member_id=member_id, family_id=invite.family_id)

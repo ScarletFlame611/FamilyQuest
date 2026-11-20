@@ -55,3 +55,23 @@ class Member(Base):
     age_group: Mapped[AgeGroup | None] = mapped_column(str_enum(AgeGroup, "age_group"))
     parent_consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+
+
+class Invite(Base):
+    __tablename__ = "invites"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_id)
+    family_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("families.id", ondelete="CASCADE"), index=True
+    )
+    # Сам токен знает только тот, кому отправили ссылку; в базе лишь его SHA-256
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_by_member_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("members.id", ondelete="CASCADE")
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    used_by_member_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("members.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)

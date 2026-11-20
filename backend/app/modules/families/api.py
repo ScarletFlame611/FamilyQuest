@@ -10,6 +10,7 @@ from app.modules.families.schemas import (
     ChildCreateIn,
     FamilyBriefOut,
     FamilyOut,
+    InviteOut,
     MemberOut,
     MeOut,
     SetPinIn,
@@ -68,3 +69,10 @@ async def set_pin(body: SetPinIn, adult: AdultDep, session: SessionDep) -> None:
         raise
     await service.set_pin(session, adult.family_id, body.pin)
     await session.commit()
+
+
+@router.post("/family/invites", status_code=status.HTTP_201_CREATED)
+async def create_invite(adult: AdultDep, session: SessionDep) -> InviteOut:
+    link = await service.create_invite(session, adult.family_id, adult.member_id)
+    await session.commit()
+    return InviteOut(token=link.token, expires_at=link.expires_at)
