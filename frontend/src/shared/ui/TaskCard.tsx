@@ -62,16 +62,22 @@ export function TaskCard({
   viewerIsAdult,
   avatars,
   onChanged,
+  onNotice,
 }: {
   task: Task;
   viewerId: string | null;
   viewerIsAdult: boolean;
   avatars: Map<string, string>;
   onChanged: () => void;
+  // Сообщение для экрана: карточка после отмены переезжает в другую колонку и своё состояние теряет
+  onNotice?: (text: string) => void;
 }) {
   const take = useAction((key) => api.take(key, task.id));
   const mark = useAction((key) => api.mark(key, task.id));
   const confirm = useAction((key) => api.confirm(key, task.id));
+  const [revoking, setRevoking] = useState(false);
+  const [reason, setReason] = useState("");
+  const revoke = useAction((key) => api.revoke(key, task.id, reason.trim()));
   const mine = task.assignee_member_id === viewerId;
   const run = async (action: typeof take) => (await action.run()).ok && onChanged();
 
@@ -82,6 +88,48 @@ export function TaskCard({
     action = <CardAction label="✓ Сделал" state={mark.state} onClick={() => void run(mark)} />;
   else if (task.status === "marked" && viewerIsAdult)
     action = <CardAction label="Подтвердить" state={confirm.state} onClick={() => void run(confirm)} />;
+  else if (task.status === "confirmed" && viewerIsAdult && revoking)
+    action = (
+      <>
+        <div className="kfield note">
+          {mine ? "Вы" : task.assignee_name}: −{task.points} ⭐. Если баллов не хватит на купленные
+          награды, покупки отменятся сами.
+        </div>
+        <input
+          className="pass small kfield"
+          value={reason}
+          maxLength={200}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Почему отменяете"
+        />
+        <CardAction
+          label="Отменить подтверждение"
+          tone="soft"
+          state={revoke.state}
+          onClick={async () => {
+            if (!reason.trim()) return;
+            const result = await revoke.run();
+            if (!result.ok) return;
+            const cancelled = result.value.cancelled_purchases;
+            onNotice?.(
+              cancelled.length
+                ? `Подтверждение «${task.title}» отменено. Покупки отменены: ${cancelled.join(", ")}`
+                : `Подтверждение «${task.title}» отменено`,
+            );
+            onChanged();
+          }}
+        />
+        <button className="kact soft" onClick={() => setRevoking(false)}>
+          Не отменять
+        </button>
+      </>
+    );
+  else if (task.status === "confirmed" && viewerIsAdult)
+    action = (
+      <button className="kact soft" onClick={() => setRevoking(true)}>
+        Отменить подтверждение
+      </button>
+    );
 
   return (
     <CardShell

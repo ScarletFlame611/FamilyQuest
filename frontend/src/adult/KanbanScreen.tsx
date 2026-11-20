@@ -7,7 +7,7 @@ import { AdultLayout } from "./AdultLayout";
 export function KanbanScreen() {
   const { data: me } = useLoad(api.me);
   return (
-    <AdultLayout wide>
+    <AdultLayout>
       <Title text="Все дела семьи" hint="Кто что делает сейчас и что уже готово сегодня" />
       <Kanban viewerId={me?.id ?? null} viewerIsAdult />
     </AdultLayout>

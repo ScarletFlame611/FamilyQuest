@@ -1,10 +1,17 @@
 import uuid
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, StringConstraints
 
 from app.modules.families.enums import MemberRole
 from app.modules.goals.enums import GoalIcon
+
+
+class GoalCreateIn(BaseModel):
+    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]
+    icon: GoalIcon
+    target: int = Field(gt=0, le=100000)
 
 
 class ContributionOut(BaseModel):
@@ -32,5 +39,7 @@ class GoalOut(BaseModel):
     # Сколько баллов семья заработала с момента создания цели; траты его не уменьшают
     progress: int
     reached: bool
+    # Когда семья дошла до цели; после этого момента прогресс уже не меняется
+    reached_at: datetime | None
     contributions: list[ContributionOut]
     feed: list[FeedItemOut]

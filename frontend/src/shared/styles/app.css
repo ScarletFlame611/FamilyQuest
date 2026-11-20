@@ -30,6 +30,10 @@ h1, h2 { margin: 0; }
 .sub { font-size: 15px; color: var(--muted); font-weight: 800; margin-top: 4px; }
 
 .list { display: grid; gap: 10px; }
+.jump { display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 12px; width: 100%; min-height: 72px; margin-top: 14px; padding: 10px 16px 10px 10px; border: 2px dashed var(--violet); border-radius: 22px; background: var(--violet-soft); color: var(--violet-dark); text-align: left; font-size: 18px; font-weight: 900; line-height: 1.2; }
+.jump .tile { width: 56px; height: 56px; border-radius: 16px; font-size: 32px; background: #fff; }
+.jump small { display: block; font-size: 15px; font-weight: 800; color: var(--muted); }
+.jump .go { font-size: 26px; }
 .tcard { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 14px; width: 100%; min-height: 88px; padding: 12px 14px 12px 12px; background: var(--card); border-radius: 22px; box-shadow: 0 2px 0 var(--line); text-align: left; }
 .tile { width: 64px; height: 64px; border-radius: 18px; background: var(--tint, var(--violet-soft)); display: grid; place-items: center; font-size: 38px; line-height: 1; }
 .tname { font-size: 18px; font-weight: 800; line-height: 1.25; }
@@ -41,6 +45,7 @@ h1, h2 { margin: 0; }
 .chip.ok { background: var(--green-soft); color: var(--green-dark); font-size: 14px; }
 .chip.grey { background: #efedf5; color: var(--muted); }
 .tcard.done { box-shadow: none; background: transparent; border: 1.5px dashed var(--line); }
+.tcard.fresh { box-shadow: 0 0 0 3px var(--green), 0 2px 0 var(--line); animation: pop .5s ease-out; }
 .tcard.done .tile { filter: saturate(.5); opacity: .75; }
 .tcard.done .tname { color: var(--muted); }
 .take { height: 40px; padding: 0 16px; border-radius: 999px; background: var(--green); color: #fff; font-size: 16px; font-weight: 900; }
@@ -68,9 +73,12 @@ h1, h2 { margin: 0; }
 .timer i { display: block; height: 100%; width: 100%; background: var(--violet); transform-origin: left; animation: drain 2.6s linear forwards; }
 @keyframes drain { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .spinner { width: 72px; height: 72px; border-radius: 50%; border: 9px solid var(--line); border-top-color: var(--green); animation: spin .8s linear infinite; }
+.bignum { font-family: var(--head); font-size: 72px; font-weight: 900; line-height: 1; color: var(--amber-ink); font-variant-numeric: tabular-nums; animation: pop .5s ease-out; }
+@keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .burst { position: relative; }
-.burst span { position: absolute; left: 50%; top: 50%; font-size: 30px; animation: fly .9s ease-out forwards; }
+/* Плитка-герой тоже span, улетать должны только звёздочки вокруг неё */
+.burst span:not(.hero) { position: absolute; left: 50%; top: 50%; font-size: 30px; animation: fly .9s ease-out forwards; }
 @keyframes fly { from { transform: translate(-50%,-50%) scale(.3); opacity: 1; } to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1); opacity: 0; } }
 .toast { background: var(--green-soft); color: var(--green-dark); border-radius: 16px; padding: 10px 14px; font-size: 15px; font-weight: 800; text-align: center; }
 
@@ -138,6 +146,53 @@ h1, h2 { margin: 0; }
 .sheet-card p b { color: var(--ink); }
 .demo { display: flex; align-items: center; justify-content: flex-end; gap: 10px; background: var(--bg); border-radius: 18px; padding: 12px; }
 .demo .grown { box-shadow: 0 0 0 4px var(--amber-soft), 0 0 0 6px var(--amber); }
+
+/* Два связанных раздела одного экрана: на телефоне друг под другом, на ноутбуке рядом */
+.cols { display: grid; gap: 16px; align-items: start; }
+.col { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.title-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.head-action { display: none; }
+.head-action button { min-height: 52px; padding: 0 22px; border-radius: 16px; background: var(--violet); color: #fff; font-size: 17px; font-weight: 900; box-shadow: 0 3px 0 var(--violet-dark); white-space: nowrap; }
+.block { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.block > h2 { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--muted); font-weight: 800; margin-top: 4px; }
+.block > h2 .chip { height: 26px; padding: 0 10px; font-size: 13px; background: var(--violet-soft); color: var(--violet-dark); }
+.empty { display: grid; justify-items: center; gap: 6px; padding: 22px 16px; text-align: center; font-size: 15px; font-weight: 700; color: var(--muted); background: var(--card); border: 1.5px dashed var(--line); border-radius: 20px; }
+.empty span { font-size: 34px; line-height: 1; }
+
+/* На ноутбуке экран не сжимается в телефонную колонку: страница занимает ширину
+   до 1200 px, карточки раскладываются в несколько колонок, разделы встают рядом */
+@media (min-width: 760px) {
+  .list:not(.rows) { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .shop { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+}
+@media (min-width: 900px) {
+  .app { max-width: 1200px; padding-left: 40px; padding-right: 40px; gap: 20px; }
+  .app.narrow { max-width: 480px; }
+  .tabs-in { max-width: 760px; }
+  .cols { grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch; }
+  .head-action { display: block; }
+  .adult > .cta.has-head-action { display: none; }
+  .adult .hd { height: 72px; padding: 0 12px 0 14px; background: var(--card); border-radius: 22px; box-shadow: 0 2px 0 var(--line); }
+  .block { background: var(--violet-soft); border-radius: 24px; padding: 16px; gap: 12px; }
+  .block > h2 { margin: 0; padding: 2px 4px; font-family: var(--head); font-size: 18px; color: var(--ink); }
+  .block > h2 .chip { background: var(--card); }
+  .block .empty { border: 0; padding: 32px 16px; }
+  .block .note { padding: 4px; }
+  .cols > .goal, .cols > .panel { align-self: start; }
+  /* Кнопки карточки встают в строку справа от названия, а в узкой колонке переносятся вниз */
+  .block .kcard { display: flex; flex-wrap: wrap; align-items: center; }
+  .block .kcard > .tile { flex: none; }
+  .block .kcard > div:not(.err):not(.kfield) { flex: 10 1 180px; min-width: 0; }
+  .block .kcard .kact { flex: 1 0 auto; padding: 0 18px; }
+  .block .kcard .err, .block .kcard .kfield { flex-basis: 100%; }
+  /* Одиночная кнопка внизу экрана взрослого не тянется на всю ширину страницы */
+  .adult > .cta { align-self: flex-start; width: auto; min-width: 320px; padding: 0 32px; }
+  .adult > .panel:not(.full) { width: 100%; max-width: 760px; }
+  /* Экран одного дела у ребёнка остаётся крупным и по центру */
+  .app:not(.adult) > .cta, .app:not(.adult) > .state { align-self: center; max-width: 520px; }
+  .sheet { align-items: center; }
+  .sheet-card { max-width: 480px; border-radius: 26px; padding-bottom: 22px; }
+}
 
 @media (max-width: 380px) { .hd { gap: 6px; } .player { gap: 8px; } .av { width: 44px; height: 44px; font-size: 27px; } .player b { font-size: 18px; } .bal { padding: 0 10px 0 8px; font-size: 20px; } .grown { padding: 0 10px; gap: 4px; } }
 @media (max-width: 339px) { .grown span { display: none; } }

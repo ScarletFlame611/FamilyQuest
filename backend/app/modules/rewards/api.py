@@ -1,7 +1,7 @@
 import uuid
 from dataclasses import asdict
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, status
 
 from app.core.idempotency import IdempotencyKeyHeader, run_idempotent
 from app.deps import AdultDep, ChildDep, MemberDep, SessionDep
@@ -12,8 +12,11 @@ from app.modules.rewards.schemas import (
     CancelIn,
     NotEnoughOut,
     PurchaseOut,
+    RewardAdminOut,
+    RewardCreateIn,
     RewardOfferOut,
     RewardOut,
+    RewardUpdateIn,
 )
 
 router = APIRouter(prefix="/api/rewards", tags=["rewards"])
@@ -30,9 +33,57 @@ async def list_rewards(member: MemberDep, session: SessionDep) -> list[RewardOff
     return [RewardOfferOut(**asdict(offer)) for offer in offers]
 
 
+def _admin(info: service.RewardInfo) -> RewardAdminOut:
+    return RewardAdminOut(**asdict(info))
+
+
+# Объявлен раньше /{reward_id}, иначе слово manage разбиралось бы как идентификатор
+@router.get("/manage")
+async def manage_rewards(adult: AdultDep, session: SessionDep) -> list[RewardAdminOut]:
+    return [_admin(info) for info in await service.list_rewards(session, adult.family_id)]
+
+
+@router.post("", response_model=RewardAdminOut, status_code=status.HTTP_201_CREATED)
+async def create_reward(
+    body: RewardCreateIn, adult: AdultDep, session: SessionDep, key: IdempotencyKeyHeader = None
+) -> Response:
+    async def action() -> RewardAdminOut:
+        reward_id = await service.create_reward(
+            session, adult.family_id, body.title, body.icon, body.price
+        )
+        return _admin(await service.get_reward(session, adult.family_id, reward_id))
+
+    return await run_idempotent(
+        session, adult.member_id, key, f"reward:{body.model_dump_json()}", action, 201
+    )
+
+
 @router.get("/{reward_id}")
 async def get_reward(reward_id: uuid.UUID, member: MemberDep, session: SessionDep) -> RewardOut:
     return RewardOut(**asdict(await service.get_reward(session, member.family_id, reward_id)))
+
+
+@router.patch("/{reward_id}", response_model=RewardAdminOut)
+async def update_reward(
+    reward_id: uuid.UUID,
+    body: RewardUpdateIn,
+    adult: AdultDep,
+    session: SessionDep,
+    key: IdempotencyKeyHeader = None,
+) -> Response:
+    async def action() -> RewardAdminOut:
+        info = await service.update_reward(
+            session, adult.family_id, reward_id, body.title, body.price, body.hidden
+        )
+        return _admin(info)
+
+    return await run_idempotent(
+        session,
+        adult.member_id,
+        key,
+        f"reward:{reward_id}:{body.model_dump_json()}",
+        action,
+    )
 
 
 @router.post(

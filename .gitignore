@@ -5,6 +5,7 @@
 
 design/
 exports/
+backups/
 
 .DS_Store
 __pycache__/

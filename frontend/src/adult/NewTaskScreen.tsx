@@ -1,8 +1,8 @@
 import { useState } from "react";
 
 import { api } from "../shared/api/endpoints";
-import type { TaskIcon } from "../shared/api/types";
-import { TASK_ICONS, avatar } from "../shared/catalog";
+import type { AgeGroup, TaskIcon } from "../shared/api/types";
+import { TASK_ICONS, TASK_PRESETS, type TaskPreset, avatar } from "../shared/catalog";
 import { navigate } from "../shared/lib/router";
 import { useAction } from "../shared/lib/useAction";
 import { useLoad } from "../shared/lib/useLoad";
@@ -12,10 +12,41 @@ import { AdultLayout } from "./AdultLayout";
 
 const ICONS = Object.keys(TASK_ICONS) as TaskIcon[];
 const BOARD = "board";
+// На телефоне двадцать готовых дел занимают несколько экранов, поэтому сначала видны первые
+const PRESETS_SHOWN = 6;
+
+function Presets({ age, chosen, onPick }: { age: AgeGroup; chosen: string; onPick: (p: TaskPreset) => void }) {
+  const [all, setAll] = useState(false);
+  const presets = TASK_PRESETS[age];
+  const shown = all ? presets : presets.slice(0, PRESETS_SHOWN);
+  return (
+    <div className="field">
+      Готовые дела для {age} лет
+      <small>Нажмите, и форма заполнится. Всё можно поменять перед сохранением</small>
+      <div className="presets">
+        {shown.map((p) => (
+          <button key={p.title} className={p.title === chosen ? "on" : ""} onClick={() => onPick(p)}>
+            <span className="tile" style={{ ["--tint" as string]: TASK_ICONS[p.icon].tint }}>
+              {TASK_ICONS[p.icon].emoji}
+            </span>
+            <span className="name">{p.title}</span>
+            <span className="price">{p.points} ⭐</span>
+          </button>
+        ))}
+      </div>
+      {presets.length > PRESETS_SHOWN && (
+        <button className="btn soft" onClick={() => setAll(!all)}>
+          {all ? "Свернуть" : `Показать все (${presets.length})`}
+        </button>
+      )}
+    </div>
+  );
+}
 
 export function NewTaskScreen() {
   const { data: family } = useLoad(api.family);
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [icon, setIcon] = useState<TaskIcon>("toys");
   const [points, setPoints] = useState("10");
   const [assignee, setAssignee] = useState<string>(BOARD);
@@ -23,11 +54,20 @@ export function NewTaskScreen() {
   const create = useAction((key) =>
     api.createTask(key, {
       title: title.trim(),
+      description: description.trim() || null,
       icon,
       points: Number(points),
       assignee_id: assignee === BOARD ? null : assignee,
     }),
   );
+  const age = family?.members.find((m) => m.id === assignee)?.age_group;
+
+  function pick(preset: TaskPreset) {
+    setTitle(preset.title);
+    setIcon(preset.icon);
+    setPoints(String(preset.points));
+    setHint("");
+  }
 
   async function submit() {
     const value = Number(points);
@@ -41,70 +81,87 @@ export function NewTaskScreen() {
   return (
     <AdultLayout>
       <Title text="Новое дело" />
-      <section className="panel">
-        <label className="field">
-          Что сделать
-          <input
-            className="pass"
-            value={title}
-            maxLength={60}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Например: Убрать игрушки"
-          />
-        </label>
-        <div className="field">
-          Иконка
-          <small>По ней дело узнает ребёнок, который ещё не читает</small>
-          <div className="icons">
-            {ICONS.map((id) => (
+      <div className="cols">
+        <section className="panel">
+          <div className="field">
+            Кому
+            <small>Если выбрать ребёнка, появятся готовые дела для его возраста</small>
+            <div className="choices">
+              {family?.members.map((m) => (
+                <button
+                  key={m.id}
+                  className={assignee === m.id ? "on" : ""}
+                  onClick={() => setAssignee(m.id)}
+                >
+                  {avatar(m.avatar)} {m.name}
+                </button>
+              ))}
               <button
-                key={id}
-                className={id === icon ? "on" : ""}
-                onClick={() => setIcon(id)}
-                aria-pressed={id === icon}
+                className={assignee === BOARD ? "on" : ""}
+                onClick={() => setAssignee(BOARD)}
               >
-                <span className="tile" style={{ ["--tint" as string]: TASK_ICONS[id].tint }}>
-                  {TASK_ICONS[id].emoji}
-                </span>
-                {TASK_ICONS[id].label}
+                🙋 На общую доску
               </button>
-            ))}
+            </div>
           </div>
-        </div>
-        <label className="field">
-          Цена в баллах
-          <input
-            className="pass"
-            inputMode="numeric"
-            value={points}
-            onChange={(e) => setPoints(e.target.value.replace(/\D/g, ""))}
-          />
-        </label>
-        <div className="field">
-          Кому
-          <div className="choices">
-            {family?.members.map((m) => (
-              <button
-                key={m.id}
-                className={assignee === m.id ? "on" : ""}
-                onClick={() => setAssignee(m.id)}
-              >
-                {avatar(m.avatar)} {m.name}
-              </button>
-            ))}
-            <button
-              className={assignee === BOARD ? "on" : ""}
-              onClick={() => setAssignee(BOARD)}
-            >
-              🙋 На общую доску
-            </button>
+          {age && <Presets key={age} age={age} chosen={title} onPick={pick} />}
+        </section>
+        <section className="panel">
+          <label className="field">
+            Что сделать
+            <input
+              className="pass"
+              value={title}
+              maxLength={60}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Например: Убрать игрушки"
+            />
+          </label>
+          <label className="field">
+            Описание
+            <small>Необязательно: что именно нужно сделать</small>
+            <textarea
+              className="pass"
+              rows={3}
+              value={description}
+              maxLength={500}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </label>
+          <div className="field">
+            Иконка
+            <small>По ней дело узнает ребёнок, который ещё не читает</small>
+            <div className="icons">
+              {ICONS.map((id) => (
+                <button
+                  key={id}
+                  className={id === icon ? "on" : ""}
+                  onClick={() => setIcon(id)}
+                  aria-pressed={id === icon}
+                >
+                  <span className="tile" style={{ ["--tint" as string]: TASK_ICONS[id].tint }}>
+                    {TASK_ICONS[id].emoji}
+                  </span>
+                  {TASK_ICONS[id].label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="err">{hint}</div>
-        <ActionButton state={create.state} className="cta violet" onClick={() => void submit()}>
-          Добавить дело
-        </ActionButton>
-      </section>
+          <label className="field">
+            Цена в баллах
+            <input
+              className="pass"
+              inputMode="numeric"
+              value={points}
+              onChange={(e) => setPoints(e.target.value.replace(/\D/g, ""))}
+            />
+          </label>
+          <div className="err">{hint}</div>
+          <ActionButton state={create.state} className="cta violet" onClick={() => void submit()}>
+            Добавить дело
+          </ActionButton>
+        </section>
+      </div>
     </AdultLayout>
   );
 }

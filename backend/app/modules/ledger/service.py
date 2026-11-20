@@ -23,6 +23,18 @@ class ReserveMismatchError(ConflictError):
     pass
 
 
+class AccrualNotFoundError(NotFoundError):
+    pass
+
+
+class AlreadyReversedError(ConflictError):
+    pass
+
+
+class NothingToWriteOffError(ConflictError):
+    pass
+
+
 @dataclass(frozen=True)
 class Balance:
     balance: int
@@ -44,12 +56,24 @@ class EarningView:
 
 @dataclass(frozen=True)
 class EntryView:
+    id: uuid.UUID
     kind: EntryKind
     amount: int
     task_id: uuid.UUID | None
     purchase_id: uuid.UUID | None
     note: str | None
     created_at: datetime
+
+
+def available_effect(kind: EntryKind, amount: int) -> int:
+    """Насколько запись изменила баланс для трат; сумма по всей истории равна ему."""
+    # Резерв и его снятие меняют только отложенное, поэтому для трат знак обратный;
+    # выдача награды убирает баллы и из баланса, и из резерва — для трат это ноль
+    if kind in (EntryKind.RESERVE, EntryKind.RELEASE):
+        return -amount
+    if kind is EntryKind.SPEND:
+        return 0
+    return amount
 
 
 def _positive(amount: int) -> None:
@@ -72,14 +96,27 @@ async def _lock_account(session: AsyncSession, member_id: uuid.UUID) -> Account:
     return account
 
 
+async def lock_accounts(session: AsyncSession, member_ids: list[uuid.UUID]) -> None:
+    """Блокирует счета участников в порядке возрастания идентификатора счёта."""
+    # Две пачки с пересекающимися счетами берут блокировки в одном порядке
+    # и поэтому не ждут друг друга по кругу
+    await session.execute(
+        select(Account.id)
+        .where(Account.member_id.in_(set(member_ids)))
+        .order_by(Account.id)
+        .with_for_update()
+    )
+
+
 async def accrue(
     session: AsyncSession,
     member_id: uuid.UUID,
     amount: int,
     task_id: uuid.UUID | None = None,
     note: str | None = None,
+    task_attempt: int = 0,
 ) -> bool:
-    """Начисляет баллы под блокировкой счёта; повторное начисление за ту же задачу не проходит."""
+    """Начисляет баллы под блокировкой счёта; второе начисление за то же выполнение не проходит."""
     _positive(amount)
     account = await _lock_account(session, member_id)
     try:
@@ -92,6 +129,7 @@ async def accrue(
                     kind=EntryKind.ACCRUAL,
                     amount=amount,
                     task_id=task_id,
+                    task_attempt=task_attempt if task_id else None,
                     note=note,
                 )
             )
@@ -102,6 +140,50 @@ async def accrue(
     account.balance += amount
     await session.flush()
     return True
+
+
+async def reverse_task_accrual(
+    session: AsyncSession,
+    member_id: uuid.UUID,
+    task_id: uuid.UUID,
+    task_attempt: int,
+    reason: str,
+    author_member_id: uuid.UUID,
+) -> int:
+    """Сторнирует начисление за выполнение задачи новой записью и возвращает списанную сумму."""
+    account = await _lock_account(session, member_id)
+    accrual = await session.scalar(
+        select(LedgerEntry).where(
+            LedgerEntry.account_id == account.id,
+            LedgerEntry.task_id == task_id,
+            LedgerEntry.task_attempt == task_attempt,
+            LedgerEntry.kind == EntryKind.ACCRUAL,
+        )
+    )
+    if accrual is None:
+        raise AccrualNotFoundError("Начисление за это дело не найдено")
+    try:
+        async with session.begin_nested():
+            session.add(
+                LedgerEntry(
+                    account_id=account.id,
+                    kind=EntryKind.REVERSAL,
+                    amount=-accrual.amount,
+                    task_id=task_id,
+                    task_attempt=task_attempt,
+                    reverses_entry_id=accrual.id,
+                    created_by_member_id=author_member_id,
+                    note=reason,
+                )
+            )
+    except IntegrityError as error:
+        if "uq_ledger_entries_reverses" not in str(error.orig):
+            raise
+        raise AlreadyReversedError("Это начисление уже отменено") from None
+    # Баланс может уйти в минус, если баллы уже потрачены на выданную награду
+    account.balance -= accrual.amount
+    await session.flush()
+    return accrual.amount
 
 
 async def reserve(
@@ -157,6 +239,33 @@ async def spend(
     await _take_from_reserve(session, member_id, amount, purchase_id, EntryKind.SPEND)
 
 
+async def write_off_negative(
+    session: AsyncSession, member_id: uuid.UUID, reason: str, author_member_id: uuid.UUID
+) -> Balance:
+    """Списывает минус на балансе отдельной записью журнала: баланс становится нулевым."""
+    account = await _lock_account(session, member_id)
+    if account.balance >= 0:
+        raise NothingToWriteOffError("Списывать нечего: баланс не в минусе")
+    session.add(
+        LedgerEntry(
+            account_id=account.id,
+            kind=EntryKind.WRITE_OFF,
+            amount=-account.balance,
+            created_by_member_id=author_member_id,
+            note=reason,
+        )
+    )
+    account.balance = 0
+    await session.flush()
+    return Balance(balance=account.balance, reserved=account.reserved)
+
+
+async def family_balances(session: AsyncSession, family_id: uuid.UUID) -> dict[uuid.UUID, Balance]:
+    """Возвращает баланс и резерв каждого участника семьи из сохранённого кэша."""
+    accounts = await session.scalars(select(Account).where(Account.family_id == family_id))
+    return {a.member_id: Balance(balance=a.balance, reserved=a.reserved) for a in accounts}
+
+
 async def get_balance(session: AsyncSession, member_id: uuid.UUID) -> Balance:
     """Возвращает баланс и резерв участника из сохранённого кэша."""
     account = await session.scalar(select(Account).where(Account.member_id == member_id))
@@ -204,6 +313,7 @@ async def list_entries(
     )
     return [
         EntryView(
+            id=entry.id,
             kind=entry.kind,
             amount=entry.amount,
             task_id=entry.task_id,
@@ -215,21 +325,31 @@ async def list_entries(
     ]
 
 
-async def family_earnings_since(
+async def family_earnings_timeline(
     session: AsyncSession, family_id: uuid.UUID, since: datetime
-) -> dict[uuid.UUID, int]:
-    """Сколько баллов заработал каждый участник семьи с указанного момента."""
+) -> list[EarningView]:
+    """Возвращает все начисления и их отмены в семье с указанного момента, старые первыми."""
     rows = await session.execute(
-        select(Account.member_id, func.sum(LedgerEntry.amount))
+        select(Account.member_id, LedgerEntry)
         .join(LedgerEntry, LedgerEntry.account_id == Account.id)
         .where(
             Account.family_id == family_id,
             LedgerEntry.kind.in_(EARNING_KINDS),
             LedgerEntry.created_at >= since,
         )
-        .group_by(Account.member_id)
+        # Идентификатор разводит записи с одинаковым временем, чтобы порядок не плавал
+        .order_by(LedgerEntry.created_at, LedgerEntry.id)
     )
-    return {member_id: int(total) for member_id, total in rows.tuples()}
+    return [
+        EarningView(
+            member_id=member_id,
+            amount=entry.amount,
+            task_id=entry.task_id,
+            note=entry.note,
+            created_at=entry.created_at,
+        )
+        for member_id, entry in rows.tuples()
+    ]
 
 
 async def recent_family_earnings(

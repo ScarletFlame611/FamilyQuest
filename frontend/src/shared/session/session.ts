@@ -31,6 +31,21 @@ function persist(session: Session | null) {
 let current: Session | null = load();
 const listeners = new Set<() => void>();
 
+// Другая вкладка могла обновить токены или включить детский режим. Без этого вкладка
+// держала бы в памяти старый одноразовый refresh-токен (и выход по его отказу стёр бы
+// сессию везде) или взрослую сессию, когда в соседней вкладке уже детский режим
+window.addEventListener("storage", (event) => {
+  if (event.key !== STORAGE_KEY && event.key !== null) return;
+  current = load();
+  listeners.forEach((listener) => listener());
+});
+
+// Последнее состояние из хранилища: соседняя вкладка могла сменить токены только что
+export function latestSession(): Session | null {
+  current = load() ?? current;
+  return current;
+}
+
 export function getSession(): Session | null {
   return current;
 }

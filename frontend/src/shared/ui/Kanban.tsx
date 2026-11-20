@@ -1,6 +1,9 @@
+import { useState } from "react";
+
 import { api } from "../api/endpoints";
 import type { Task } from "../api/types";
 import { useLoad } from "../lib/useLoad";
+import { LoadState } from "./LoadState";
 import "../styles/kanban.css";
 import { TaskCard } from "./TaskCard";
 
@@ -25,7 +28,9 @@ export function Kanban({
   viewerIsAdult: boolean;
   onChanged?: () => void;
 }) {
-  const { data: tasks, error, reload } = useLoad(api.familyTasks);
+  const loaded = useLoad(api.familyTasks);
+  const { data: tasks, reload } = loaded;
+  const [notice, setNotice] = useState("");
   const avatars = useAvatars();
 
   function changed() {
@@ -35,7 +40,12 @@ export function Kanban({
 
   return (
     <>
-      {error && <div className="err">{error}</div>}
+      <LoadState state={loaded} />
+      {notice && (
+        <div className="note" role="status">
+          {notice}
+        </div>
+      )}
       <div className="kanban">
         {COLUMNS.map((column) => {
           const cards = tasks?.filter((t) => t.status === column.status) ?? [];
@@ -54,6 +64,7 @@ export function Kanban({
                   viewerIsAdult={viewerIsAdult}
                   avatars={avatars}
                   onChanged={changed}
+                  onNotice={setNotice}
                 />
               ))}
             </section>

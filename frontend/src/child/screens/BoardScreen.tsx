@@ -1,13 +1,16 @@
 import { api } from "../../shared/api/endpoints";
 import { useLoad } from "../../shared/lib/useLoad";
-import { MainHeader, TaskCard, Title } from "../parts";
+import { LoadState } from "../../shared/ui/LoadState";
+import { JumpCard, MainHeader, TaskCard, Title } from "../parts";
 
 export function BoardScreen() {
-  const { data: tasks } = useLoad(api.board);
+  const board = useLoad(api.board);
+  const tasks = board.data;
   return (
     <>
       <MainHeader />
       <Title text="Можно взять" hint="Возьми любое дело, и оно станет твоим" />
+      <LoadState state={board} child />
       {tasks && !tasks.length ? (
         <div className="focus">
           <div className="hero">🙋</div>
@@ -20,6 +23,13 @@ export function BoardScreen() {
           ))}
         </div>
       )}
+      <JumpCard
+        to="/kid"
+        emoji="📋"
+        text="Мои дела"
+        hint="Вернуться к своим делам"
+        label="Мои дела"
+      />
     </>
   );
 }

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.core.db import session_factory
 from app.modules.families import service as families
+from app.modules.families.enums import AgeGroup
 from app.modules.goals import service as goals
 from app.modules.goals.enums import GoalIcon
 from app.modules.tasks import service as tasks
@@ -37,7 +38,9 @@ async def create_load_family(session: AsyncSession, n: int, password: str, tasks
     await families.set_pin(session, family_id, DEMO_PIN)
     user_id = await users.create_user(session, load_email(n), password, "Мама")
     adult = await families.add_adult(session, family_id, user_id, "Мама", "woman")
-    child = await families.add_child(session, family_id, "Маша", "fox")
+    child = await families.add_child(
+        session, family_id, "Маша", "fox", AgeGroup.AGE_6_7, parent_consent=True
+    )
     await goals.create_goal(session, family_id, "Поход", GoalIcon.TENT, 300)
     await tasks.create_assigned_tasks(
         session,

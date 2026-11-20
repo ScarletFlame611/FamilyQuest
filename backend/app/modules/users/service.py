@@ -4,11 +4,18 @@ from datetime import timedelta
 
 from argon2 import PasswordHasher
 from sqlalchemy import delete, func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import now_utc
 from app.core.config import get_settings
-from app.core.errors import DomainError, InvalidInputError, TooManyAttemptsError, UnauthorizedError
+from app.core.errors import (
+    ConflictError,
+    DomainError,
+    InvalidInputError,
+    TooManyAttemptsError,
+    UnauthorizedError,
+)
 from app.core.security import (
     AccessClaims,
     create_access_token,
@@ -44,6 +51,10 @@ class WrongPasswordError(InvalidInputError):
     pass
 
 
+class EmailTakenError(ConflictError):
+    pass
+
+
 @dataclass(frozen=True)
 class TokenPair:
     access_token: str
@@ -58,6 +69,41 @@ async def create_user(session: AsyncSession, email: str, password: str, name: st
     session.add(user)
     await session.flush()
     return user.id
+
+
+async def register(
+    session: AsyncSession, email: str, password: str, name: str, avatar: str, family_name: str
+) -> TokenPair:
+    """Создаёт аккаунт, новую семью с этим взрослым и сразу выдаёт токены."""
+    try:
+        # Точка сохранения: одновременная регистрация той же почты упирается
+        # в уникальный индекс и должна дать понятную ошибку, а не 500
+        async with session.begin_nested():
+            user_id = await create_user(session, email, password, name)
+    except IntegrityError as error:
+        if "uq_users_email_lower" not in str(error.orig):
+            raise
+        raise EmailTakenError("Эта почта уже зарегистрирована") from None
+    family_id = await families.create_family(session, family_name, "Europe/Moscow")
+    member_id = await families.add_adult(session, family_id, user_id, name, avatar)
+    return await issue_tokens(session, member_id, family_id, MemberRole.ADULT)
+
+
+async def accept_invite(
+    session: AsyncSession, token: str, email: str, password: str, name: str, avatar: str
+) -> TokenPair:
+    """Создаёт аккаунт по приглашению, добавляет взрослого в семью пригласившего и выдаёт токены."""
+    # Ссылку проверяем до создания аккаунта, чтобы не хешировать пароль впустую
+    await families.get_invite(session, token)
+    try:
+        async with session.begin_nested():
+            user_id = await create_user(session, email, password, name)
+    except IntegrityError as error:
+        if "uq_users_email_lower" not in str(error.orig):
+            raise
+        raise EmailTakenError("Эта почта уже зарегистрирована") from None
+    membership = await families.join_by_invite(session, token, user_id, name, avatar)
+    return await issue_tokens(session, membership.member_id, membership.family_id, MemberRole.ADULT)
 
 
 async def find_user_id_by_email(session: AsyncSession, email: str) -> uuid.UUID | None:
@@ -133,16 +179,27 @@ async def check_password(session: AsyncSession, user_id: uuid.UUID, password: st
     await _check_password_counted(user, password, WrongPasswordError("Неверный пароль"))
 
 
+# Ответ на обмен токена может потеряться в сети уже после того, как сервер погасил
+# старый токен. Короткое окно позволяет клиенту повторить обмен и не вылететь из аккаунта
+REFRESH_REUSE_GRACE = timedelta(seconds=30)
+
+
 async def refresh(session: AsyncSession, refresh_token: str) -> TokenPair:
-    """Меняет refresh-токен на новую пару; старый токен больше не действует."""
+    """Меняет refresh-токен на новую пару; старый принимается ещё 30 секунд на случай повтора."""
     token = await session.scalar(
         select(RefreshToken)
         .where(RefreshToken.token_hash == hash_refresh_token(refresh_token))
         .with_for_update()
     )
-    if token is None or token.revoked_at is not None or token.expires_at <= now_utc():
+    now = now_utc()
+    if token is None or token.expires_at <= now:
         raise InvalidRefreshTokenError("Сессия истекла, войдите заново")
-    token.revoked_at = now_utc()
+    if token.revoked_at is None:
+        token.revoked_at = now
+        token.rotated_at = now
+    elif token.rotated_at is None or now - token.rotated_at > REFRESH_REUSE_GRACE:
+        # Отозван выходом из аккаунта или обменян давно — такой токен не принимаем
+        raise InvalidRefreshTokenError("Сессия истекла, войдите заново")
     return await issue_tokens(
         session, token.member_id, token.family_id, token.role, token.child_session_id
     )

@@ -5,12 +5,14 @@ import { TASK_ICONS } from "../../shared/catalog";
 import { navigate } from "../../shared/lib/router";
 import { errorText, useAction } from "../../shared/lib/useAction";
 import { useLoad } from "../../shared/lib/useLoad";
-import { setToast, useChild } from "../context";
+import { LoadState } from "../../shared/ui/LoadState";
+import { setFresh, setToast, useChild } from "../context";
 import { track } from "../events";
 import { PointsChip, SubHeader, Tile } from "../parts";
 
 export function TaskScreen({ id }: { id: string }) {
-  const { data: task, reload } = useLoad(() => api.task(id));
+  const loaded = useLoad(() => api.task(id));
+  const task = loaded.data;
   const { setTabsHidden } = useChild();
   const take = useAction((key) => api.take(key, id));
   const mark = useAction((key) => api.mark(key, id));
@@ -32,7 +34,13 @@ export function TaskScreen({ id }: { id: string }) {
         <div className="note">Отправляем…</div>
       </div>
     );
-  if (!task) return <SubHeader back="/kid" />;
+  if (!task)
+    return (
+      <>
+        <SubHeader back="/kid" />
+        <LoadState state={loaded} child />
+      </>
+    );
 
   const look = TASK_ICONS[task.icon];
   const failure = errorText(take.state) ?? errorText(mark.state);
@@ -40,7 +48,8 @@ export function TaskScreen({ id }: { id: string }) {
   async function takeTask() {
     if ((await take.run()).ok) {
       setToast(`«${task!.title}» теперь в твоих делах`);
-      reload();
+      setFresh(id);
+      navigate("/kid", { replace: true });
     }
   }
 
@@ -55,6 +64,7 @@ export function TaskScreen({ id }: { id: string }) {
         <Tile emoji={look.emoji} tint={look.tint} hero />
         <h1>{task.title}</h1>
         <PointsChip points={task.points} />
+        {task.description && <div className="note">{task.description}</div>}
         {task.status === "assigned" && task.reject_reason && (
           <div className="note">Взрослые вернули дело: {task.reject_reason}</div>
         )}

@@ -5,6 +5,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.families import service as families
+from app.modules.families.enums import AgeGroup
 from app.modules.users import service as users
 from app.seed import DEMO_PIN, MAMA_EMAIL, DemoFamily
 from tests.api import warm_pool
@@ -41,6 +42,7 @@ async def exit_pin(client: AsyncClient, child: dict[str, str], pin: str):
     )
 
 
+@pytest.mark.us05
 @pytest.mark.parametrize("pin", ["1234", "0000", "1111", "4321"])
 async def test_simple_pins_are_rejected(client: AsyncClient, demo: DemoFamily, pin: str):
     adult = await adult_tokens(client)
@@ -53,6 +55,7 @@ async def test_simple_pins_are_rejected(client: AsyncClient, demo: DemoFamily, p
     assert "легко угадать" in response.json()["detail"]
 
 
+@pytest.mark.us05
 async def test_pin_is_set_only_with_current_password(client: AsyncClient, demo: DemoFamily):
     adult = await adult_tokens(client)
     headers = bearer(adult["access_token"])
@@ -79,7 +82,7 @@ async def test_child_mode_needs_a_pin_and_a_child(
     family_id = await families.create_family(session, "Без PIN", "Europe/Moscow")
     user_id = await users.create_user(session, "nopin@familyquest.local", "pass-nopin", "Оля")
     await families.add_adult(session, family_id, user_id, "Оля", "woman")
-    child_id = await families.add_child(session, family_id, "Коля", "fox")
+    child_id = await families.add_child(session, family_id, "Коля", "fox", AgeGroup.AGE_6_7, True)
     await session.commit()
     login = await client.post(
         "/api/auth/login", json={"email": "nopin@familyquest.local", "password": "pass-nopin"}
@@ -97,6 +100,7 @@ async def test_child_mode_needs_a_pin_and_a_child(
     assert foreign.status_code == 404
 
 
+@pytest.mark.us07
 @pytest.mark.risk
 async def test_child_token_cannot_do_adult_actions(client: AsyncClient, demo: DemoFamily):
     child = await start_child_mode(client, demo)
@@ -126,6 +130,7 @@ async def test_starting_child_mode_revokes_adult_refresh_token(
     assert reuse.status_code == 401
 
 
+@pytest.mark.us93
 @pytest.mark.risk
 async def test_correct_pin_returns_adult_and_kills_child_tokens(
     client: AsyncClient, demo: DemoFamily
@@ -142,6 +147,7 @@ async def test_correct_pin_returns_adult_and_kills_child_tokens(
     assert refresh.status_code == 401
 
 
+@pytest.mark.us07
 @pytest.mark.risk
 async def test_child_refresh_never_yields_adult_rights(client: AsyncClient, demo: DemoFamily):
     child = await start_child_mode(client, demo)
@@ -158,6 +164,7 @@ async def test_child_refresh_never_yields_adult_rights(client: AsyncClient, demo
     assert pin.status_code == 403
 
 
+@pytest.mark.us93
 @pytest.mark.risk
 async def test_five_wrong_pins_lock_until_password(client: AsyncClient, demo: DemoFamily):
     child = await start_child_mode(client, demo)
@@ -184,6 +191,7 @@ async def test_five_wrong_pins_lock_until_password(client: AsyncClient, demo: De
     assert (await exit_pin(client, again, DEMO_PIN)).status_code == 200
 
 
+@pytest.mark.us93
 @pytest.mark.risk
 async def test_parallel_guessing_cannot_exceed_five_attempts(client: AsyncClient, demo: DemoFamily):
     child = await start_child_mode(client, demo)

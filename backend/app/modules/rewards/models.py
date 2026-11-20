@@ -22,6 +22,8 @@ class Reward(Base):
     icon: Mapped[str] = mapped_column(String(32))
     price: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+    # Награду скрывают, а не удаляют: на неё ссылаются покупки, которые ещё ждут выдачи
+    hidden_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class RewardPurchase(Base):

@@ -10,6 +10,7 @@ from app.core.config import get_settings
 from app.core.db import session_factory
 from app.modules.child_mode import service as child_mode
 from app.modules.families import service as families
+from app.modules.families.enums import AgeGroup
 from app.modules.goals import service as goals
 from app.modules.goals.enums import GoalIcon
 from app.modules.ledger import service as ledger
@@ -77,8 +78,8 @@ async def seed_demo_family(
     papa_user = await users.create_user(session, PAPA_EMAIL, papa_password, "Папа")
     mama = await families.add_adult(session, family_id, mama_user, "Мама", "woman")
     papa = await families.add_adult(session, family_id, papa_user, "Папа", "man")
-    masha = await families.add_child(session, family_id, "Маша", "fox")
-    petya = await families.add_child(session, family_id, "Петя", "panda")
+    masha = await families.add_child(session, family_id, "Маша", "fox", AgeGroup.AGE_6_7, True)
+    petya = await families.add_child(session, family_id, "Петя", "panda", AgeGroup.AGE_8_10, True)
 
     # Цель создаётся раньше начислений, иначе они не попадут в её прогресс
     await goals.create_goal(session, family_id, "Поход с палатками всей семьёй", GoalIcon.TENT, 300)

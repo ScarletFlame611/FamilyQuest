@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import insert, or_, select
@@ -12,6 +12,7 @@ from app.core.ids import new_id
 from app.modules.families import service as families
 from app.modules.families.enums import MemberRole
 from app.modules.ledger import service as ledger
+from app.modules.rewards import service as rewards
 from app.modules.tasks.enums import TaskAction, TaskIcon, TaskStatus
 from app.modules.tasks.models import Task
 
@@ -28,6 +29,7 @@ class TaskTransitionError(ConflictError):
 class TaskView:
     id: uuid.UUID
     title: str
+    description: str | None
     icon: str
     points: int
     status: TaskStatus
@@ -47,6 +49,7 @@ TRANSITIONS = {
     TaskAction.MARK: (TaskStatus.ASSIGNED, TaskStatus.MARKED),
     TaskAction.CONFIRM: (TaskStatus.MARKED, TaskStatus.CONFIRMED),
     TaskAction.REJECT: (TaskStatus.MARKED, TaskStatus.ASSIGNED),
+    TaskAction.REVOKE: (TaskStatus.CONFIRMED, TaskStatus.ASSIGNED),
 }
 
 TRANSITION_ERRORS = {
@@ -63,6 +66,8 @@ def _transition(task: Task, action: TaskAction) -> None:
         message = TRANSITION_ERRORS[task.status]
         if action is TaskAction.TAKE and task.status is not TaskStatus.OPEN:
             message = "Это дело уже кто-то взял"
+        if action is TaskAction.REVOKE:
+            message = "Отменить можно только засчитанное дело"
         raise TaskTransitionError(message)
     task.status = target
 
@@ -73,6 +78,7 @@ async def _views(session: AsyncSession, family_id: uuid.UUID, tasks: list[Task])
         TaskView(
             id=task.id,
             title=task.title,
+            description=task.description,
             icon=task.icon,
             points=task.points,
             status=task.status,
@@ -109,6 +115,7 @@ async def create_task(
     icon: TaskIcon,
     points: int,
     assignee_member_id: uuid.UUID | None,
+    description: str | None = None,
 ) -> TaskView:
     """Создаёт задачу на участника своей семьи или, без исполнителя, на общей доске."""
     if assignee_member_id:
@@ -117,6 +124,7 @@ async def create_task(
         family_id=family_id,
         created_by_member_id=created_by_member_id,
         title=title,
+        description=description,
         icon=TaskIcon(icon),
         points=points,
         assignee_member_id=assignee_member_id,
@@ -151,7 +159,9 @@ async def record_completed_task(
     )
     session.add(task)
     await session.flush()
-    await ledger.accrue(session, assignee_member_id, points, task_id=task.id)
+    await ledger.accrue(
+        session, assignee_member_id, points, task_id=task.id, task_attempt=task.attempt
+    )
     return task.id
 
 
@@ -250,7 +260,9 @@ async def mark(
     if assignee.role is MemberRole.ADULT:
         _transition(task, TaskAction.CONFIRM)
         task.confirmed_at = task.marked_at
-        await ledger.accrue(session, member_id, task.points, task_id=task.id)
+        await ledger.accrue(
+            session, member_id, task.points, task_id=task.id, task_attempt=task.attempt
+        )
     await session.flush()
     return await _view(session, family_id, task)
 
@@ -274,9 +286,106 @@ async def confirm(session: AsyncSession, family_id: uuid.UUID, task_id: uuid.UUI
     task.confirmed_at = now_utc()
     if task.assignee_member_id is None:
         raise TaskTransitionError("У дела нет исполнителя")
-    await ledger.accrue(session, task.assignee_member_id, task.points, task_id=task.id)
+    await ledger.accrue(
+        session,
+        task.assignee_member_id,
+        task.points,
+        task_id=task.id,
+        task_attempt=task.attempt,
+    )
     await session.flush()
     return await _view(session, family_id, task)
+
+
+@dataclass(frozen=True)
+class RevokeResult:
+    task: TaskView
+    cancelled_purchases: list[str]
+
+
+async def revoke(
+    session: AsyncSession,
+    family_id: uuid.UUID,
+    task_id: uuid.UUID,
+    reason: str,
+    adult_member_id: uuid.UUID,
+) -> RevokeResult:
+    """Отменяет подтверждение: сторно в журнале, дело возвращается исполнителю с причиной."""
+    task = await _lock_task(session, family_id, task_id)
+    _transition(task, TaskAction.REVOKE)
+    window = (await families.get_family(session, family_id)).revoke_window_days
+    if task.confirmed_at and now_utc() - task.confirmed_at > timedelta(days=window):
+        raise TaskTransitionError(f"Подтверждение можно отменить только в течение {window} дней")
+    if task.assignee_member_id is None:
+        raise TaskTransitionError("У дела нет исполнителя")
+    assignee = task.assignee_member_id
+    # Порядок блокировок: задача, затем счёт (внутри сторно), затем покупки
+    await ledger.reverse_task_accrual(
+        session, assignee, task.id, task.attempt, reason, adult_member_id
+    )
+    task.attempt += 1
+    task.reject_reason = reason
+    task.marked_at = None
+    task.confirmed_at = None
+    cancelled = await rewards.cancel_unaffordable_purchases(
+        session,
+        family_id,
+        assignee,
+        f"Покупка отменена, потому что отменено дело «{task.title}»",
+    )
+    await session.flush()
+    return RevokeResult(await _view(session, family_id, task), [p.title for p in cancelled])
+
+
+@dataclass(frozen=True)
+class SkippedTask:
+    task_id: uuid.UUID
+    title: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class ConfirmManyResult:
+    confirmed: list[TaskView]
+    skipped: list[SkippedTask]
+
+
+async def confirm_many(
+    session: AsyncSession, family_id: uuid.UUID, task_ids: list[uuid.UUID]
+) -> ConfirmManyResult:
+    """Засчитывает пачку отмеченных дел одной транзакцией; уже засчитанные пропускает."""
+    ids = sorted(set(task_ids))
+    # Задачи блокируются в порядке идентификатора, а счета — после них и тоже по порядку:
+    # так одновременные пачки двух взрослых не ждут друг друга по кругу
+    tasks = list(
+        await session.scalars(
+            select(Task)
+            .where(Task.id.in_(ids), Task.family_id == family_id)
+            .order_by(Task.id)
+            .with_for_update()
+        )
+    )
+    if len(tasks) != len(ids):
+        # Чужая или несуществующая задача в пачке — так же, как и по одной
+        raise TaskNotFoundError("Задача не найдена")
+    ready = [t for t in tasks if t.status is TaskStatus.MARKED and t.assignee_member_id]
+    skipped = [
+        SkippedTask(t.id, t.title, TRANSITION_ERRORS[t.status]) for t in tasks if t not in ready
+    ]
+    await ledger.lock_accounts(session, [t.assignee_member_id for t in ready])
+    now = now_utc()
+    for task in ready:
+        _transition(task, TaskAction.CONFIRM)
+        task.confirmed_at = now
+        await ledger.accrue(
+            session,
+            task.assignee_member_id,
+            task.points,
+            task_id=task.id,
+            task_attempt=task.attempt,
+        )
+    await session.flush()
+    return ConfirmManyResult(await _views(session, family_id, ready), skipped)
 
 
 async def task_titles(

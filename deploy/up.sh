@@ -12,7 +12,9 @@ if [ -n "${BUILD_PROXY:-}" ]; then
   BUILD_ARGS=(--build-arg "HTTP_PROXY=$BUILD_PROXY" --build-arg "HTTPS_PROXY=$BUILD_PROXY")
 fi
 $COMPOSE build "${BUILD_ARGS[@]}"
-$COMPOSE up -d
+# API стартует только после миграций, иначе первые запросы придут к старой схеме
+$COMPOSE up -d db
 $COMPOSE run --rm backend alembic upgrade head
 $COMPOSE run --rm backend python -m app.seed
+$COMPOSE up -d
 echo "Стенд: https://$(ipconfig getifaddr en0 2>/dev/null || hostname -I | awk '{print $1}')"

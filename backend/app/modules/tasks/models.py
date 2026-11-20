@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.clock import now_utc
@@ -19,6 +19,8 @@ class Task(Base):
             f"(status = '{TaskStatus.OPEN}') = (assignee_member_id IS NULL)",
             name="open_has_no_assignee",
         ),
+        # Общая доска и список «ждут проверки» выбирают задачи семьи по статусу
+        Index("ix_tasks_family_id_status", "family_id", "status"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_id)
@@ -26,6 +28,7 @@ class Task(Base):
         ForeignKey("families.id", ondelete="CASCADE"), index=True
     )
     title: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str | None] = mapped_column(String(500))
     icon: Mapped[str] = mapped_column(String(32))
     points: Mapped[int] = mapped_column(Integer)
     assignee_member_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -36,6 +39,9 @@ class Task(Base):
     )
     status: Mapped[TaskStatus] = mapped_column(str_enum(TaskStatus, "task_status"))
     reject_reason: Mapped[str | None] = mapped_column(String(300))
+    # Номер выполнения: растёт при отмене подтверждения, чтобы повторное
+    # подтверждение дало новое начисление, а не упёрлось в прежнее
+    attempt: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     marked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)

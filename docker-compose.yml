@@ -19,6 +19,8 @@ services:
     env_file: .env
     environment:
       EXPORTS_DIR: /exports
+      # Локальный стенд: загрузку пула снимает нагрузочный тест
+      POOL_METRICS_ENABLED: "true"
     volumes:
       - ./backend:/app
       - ./exports:/exports

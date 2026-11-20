@@ -3,6 +3,7 @@ import { useState } from "react";
 import { api } from "../shared/api/endpoints";
 import type { ChildSession, SessionEvents } from "../shared/api/types";
 import { useLoad } from "../shared/lib/useLoad";
+import { LoadState } from "../shared/ui/LoadState";
 import { Title } from "../shared/ui/layout";
 import { AdultLayout } from "./AdultLayout";
 
@@ -80,12 +81,13 @@ function SessionRow({ session }: { session: ChildSession }) {
 }
 
 export function SessionsScreen() {
-  const { data: sessions, error } = useLoad(api.childSessions);
+  const loaded = useLoad(api.childSessions);
+  const sessions = loaded.data;
   return (
     <AdultLayout>
       <Title text="Журнал детского режима" hint="Что делал ребёнок и через сколько секунд от начала сессии" />
-      <section className="panel">
-        {error && <div className="err">{error}</div>}
+      <section className="panel full">
+        <LoadState state={loaded} />
         {sessions && !sessions.length && <p>Детский режим ещё не включали.</p>}
         {sessions?.map((s) => <SessionRow key={s.id} session={s} />)}
       </section>

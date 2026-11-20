@@ -12,7 +12,7 @@ export function HandoverSheet({ balance }: { balance: number | null }) {
       <div className="sheet-card" role="dialog" aria-labelledby="hintT">
         <h2 id="hintT">Детский режим включён</h2>
         <p>
-          Ребёнок видит только свои дела, дела, которые можно взять, награды и семейную копилку.
+          Ребёнок видит только свои дела, дела, которые можно взять, награды и общую цель семьи.
           Подтверждать дела и выдавать награды он не может.
         </p>
         <div className="demo">

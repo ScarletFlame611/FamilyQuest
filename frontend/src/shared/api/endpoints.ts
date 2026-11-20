@@ -1,15 +1,25 @@
 import { getSession, setSession } from "../session/session";
 import { request, requestFile } from "./client";
 import type {
+  AcceptInvite,
   Balance,
   ChildEventType,
   ChildSession,
+  ConfirmAll,
   Entry,
   Family,
   Goal,
+  GoalCreate,
+  InviteInfo,
+  InviteLink,
   Me,
+  MemberBalance,
   Purchase,
+  RewardAdmin,
+  RewardCreate,
   RewardOffer,
+  RewardUpdate,
+  Revoke,
   SessionEvents,
   Task,
   TaskCreate,
@@ -41,6 +51,20 @@ export const api = {
       }).catch(() => undefined);
     }
   },
+
+  invite: (token: string) =>
+    request<InviteInfo>("GET", `/api/auth/invites/${encodeURIComponent(token)}`, { auth: false }),
+
+  async acceptInvite(token: string, body: AcceptInvite) {
+    adultSession(
+      await request<Tokens>("POST", `/api/auth/invites/${encodeURIComponent(token)}/accept`, {
+        body,
+        auth: false,
+      }),
+    );
+  },
+
+  createInvite: () => request<InviteLink>("POST", "/api/family/invites"),
 
   me: () => request<Me>("GET", "/api/me"),
   family: () => request<Family>("GET", "/api/family"),
@@ -81,11 +105,31 @@ export const api = {
     request<Task>("POST", `/api/tasks/${id}/mark`, { idempotencyKey: key }),
   confirm: (key: string, id: string) =>
     request<Task>("POST", `/api/tasks/${id}/confirm`, { idempotencyKey: key }),
+  revoke: (key: string, id: string, reason: string) =>
+    request<Revoke>("POST", `/api/tasks/${id}/revoke`, { body: { reason }, idempotencyKey: key }),
+  confirmAll: (key: string, taskIds: string[]) =>
+    request<ConfirmAll>("POST", "/api/tasks/confirm-all", {
+      body: { task_ids: taskIds },
+      idempotencyKey: key,
+    }),
 
   balance: () => request<Balance>("GET", "/api/balance"),
+  balances: () => request<MemberBalance[]>("GET", "/api/balances"),
+  writeOff: (key: string, memberId: string, reason: string) =>
+    request<Balance>("POST", `/api/members/${memberId}/write-off`, {
+      body: { reason },
+      idempotencyKey: key,
+    }),
   ledger: () => request<Entry[]>("GET", "/api/ledger"),
+  memberLedger: (memberId: string) => request<Entry[]>("GET", `/api/members/${memberId}/ledger`),
+  memberLedgerCsv: (memberId: string) => requestFile(`/api/members/${memberId}/ledger.csv`),
 
   rewards: () => request<RewardOffer[]>("GET", "/api/rewards"),
+  manageRewards: () => request<RewardAdmin[]>("GET", "/api/rewards/manage"),
+  createReward: (key: string, body: RewardCreate) =>
+    request<RewardAdmin>("POST", "/api/rewards", { body, idempotencyKey: key }),
+  updateReward: (key: string, id: string, body: RewardUpdate) =>
+    request<RewardAdmin>("PATCH", `/api/rewards/${id}`, { body, idempotencyKey: key }),
   buy: (key: string, id: string) =>
     request<Purchase>("POST", `/api/rewards/${id}/buy`, { idempotencyKey: key }),
   pendingPurchases: () => request<Purchase[]>("GET", "/api/purchases/pending"),
@@ -98,6 +142,8 @@ export const api = {
     }),
 
   goal: () => request<Goal>("GET", "/api/goal"),
+  createGoal: (key: string, body: GoalCreate) =>
+    request<Goal>("POST", "/api/goal", { body, idempotencyKey: key }),
 
   sendChildEvents: (events: { type: ChildEventType; detail: string | null; ago_ms: number }[]) =>
     request<void>("POST", "/api/child-mode/events", { body: { events } }),

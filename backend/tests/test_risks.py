@@ -16,11 +16,23 @@ ADULT_ONLY = {
     ("POST", "/api/tasks"),
     ("POST", "/api/tasks/{task_id}/confirm"),
     ("POST", "/api/tasks/{task_id}/reject"),
+    ("POST", "/api/tasks/{task_id}/revoke"),
     ("GET", "/api/tasks/pending"),
     ("POST", "/api/purchases/{purchase_id}/give"),
     ("POST", "/api/purchases/{purchase_id}/cancel"),
     ("GET", "/api/purchases/pending"),
+    ("GET", "/api/rewards/manage"),
+    ("POST", "/api/rewards"),
+    ("PATCH", "/api/rewards/{reward_id}"),
+    ("POST", "/api/goal"),
+    ("POST", "/api/tasks/confirm-all"),
+    ("GET", "/api/balances"),
+    ("POST", "/api/members/{member_id}/write-off"),
+    ("GET", "/api/members/{member_id}/ledger"),
+    ("GET", "/api/members/{member_id}/ledger.csv"),
     ("PUT", "/api/family/pin"),
+    ("POST", "/api/family/children"),
+    ("POST", "/api/family/invites"),
     ("POST", "/api/child-mode/start"),
     ("GET", "/api/child-mode/sessions"),
     ("GET", "/api/child-mode/sessions/{session_id}/events"),
@@ -30,8 +42,20 @@ ADULT_ONLY = {
 BODIES = {
     "/api/tasks": {"title": "Себе", "icon": "bed", "points": 100},
     "/api/tasks/{task_id}/reject": {"reason": "сам"},
+    "/api/tasks/{task_id}/revoke": {"reason": "сам"},
+    "/api/members/{member_id}/write-off": {"reason": "сам"},
     "/api/purchases/{purchase_id}/cancel": {"reason": "сам"},
+    "/api/rewards": {"title": "Всё себе", "icon": "park", "price": 1},
+    "/api/rewards/{reward_id}": {"price": 1},
+    "/api/goal": {"title": "Своя цель", "icon": "pizza", "target": 1},
+    "/api/tasks/confirm-all": {"task_ids": [str(uuid.uuid4())]},  # noqa: TID251
     "/api/family/pin": {"current_password": "x", "pin": "2580"},
+    "/api/family/children": {
+        "name": "Брат",
+        "avatar": "fox",
+        "age_group": "6-7",
+        "parent_consent": True,
+    },
     "/api/child-mode/start": {"child_id": str(uuid.uuid4())},  # noqa: TID251
 }
 
@@ -57,12 +81,19 @@ def test_t1_adult_actions_are_guarded_on_the_server():
     assert adult_routes() == ADULT_ONLY
 
 
+@pytest.mark.us09
 async def test_t1_t4_child_token_gets_403_on_every_adult_action(
     client: AsyncClient, demo: DemoFamily
 ):
     masha = await child_token(client, demo.masha_id)
     some_id = str(uuid.uuid4())  # noqa: TID251 — право проверяется раньше, чем объект
     for method, path in sorted(ADULT_ONLY):
-        url = path.format(task_id=some_id, purchase_id=some_id, session_id=some_id)
+        url = path.format(
+            task_id=some_id,
+            purchase_id=some_id,
+            session_id=some_id,
+            reward_id=some_id,
+            member_id=some_id,
+        )
         response = await client.request(method, url, json=BODIES.get(path), headers=bearer(masha))
         assert response.status_code == 403, f"{method} {path}: {response.status_code}"

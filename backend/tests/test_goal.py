@@ -4,12 +4,14 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.families import service as families
+from app.modules.families.enums import AgeGroup
 from app.modules.goals import service as goals
 from app.modules.goals.enums import GoalIcon
 from app.modules.goals.models import Goal
 from app.modules.ledger import service as ledger
 from app.modules.ledger.enums import EntryKind
 from app.modules.ledger.models import Account, LedgerEntry
+from app.modules.users import service as users
 from app.seed import DemoFamily
 from tests.api import adult_token, bearer, child_token
 
@@ -56,6 +58,7 @@ async def test_progress_after_seed_equals_family_accruals_since_goal(
     ]
 
 
+@pytest.mark.us09
 async def test_confirmed_task_raises_balance_and_goal_equally(
     client: AsyncClient, session: AsyncSession, demo: DemoFamily
 ):
@@ -98,7 +101,7 @@ async def test_reversal_entry_reduces_progress(session: AsyncSession, demo: Demo
 
 async def test_points_earned_before_goal_do_not_count(session: AsyncSession, demo: DemoFamily):
     family = await families.create_family(session, "Новая", "Europe/Moscow")
-    child = await families.add_child(session, family, "Лиза", "fox")
+    child = await families.add_child(session, family, "Лиза", "fox", AgeGroup.AGE_6_7, True)
     await ledger.accrue(session, child, 50, note="До цели")
     await goals.create_goal(session, family, "Велосипед", GoalIcon.TENT, 100)
     await ledger.accrue(session, child, 7, note="После цели")
@@ -112,3 +115,42 @@ async def test_no_goal_is_404(client: AsyncClient, session: AsyncSession, demo: 
     await session.commit()
     masha = await child_token(client, demo.masha_id)
     assert (await client.get("/api/goal", headers=bearer(masha))).status_code == 404
+
+
+async def test_contributions_add_up_to_progress(client: AsyncClient, demo: DemoFamily):
+    masha = await child_token(client, demo.masha_id)
+    mama = await adult_token(client)
+    toys = next(
+        t["id"]
+        for t in (await client.get("/api/tasks/my", headers=bearer(masha))).json()
+        if t["title"] == "Убрать игрушки"
+    )
+    await client.post(f"/api/tasks/{toys}/mark", headers=bearer(masha))
+    await client.post(f"/api/tasks/{toys}/confirm", headers=bearer(mama))
+    data = await goal(client, masha)
+    assert sum(c["points"] for c in data["contributions"]) == data["progress"] == 270
+    assert {c["member_id"] for c in data["contributions"]} == {
+        str(m) for m in (demo.mama_id, demo.papa_id, demo.masha_id, demo.petya_id)
+    }
+
+
+async def test_other_family_does_not_see_goal(
+    client: AsyncClient, session: AsyncSession, demo: DemoFamily
+):
+    other = await families.create_family(session, "Соседи", "Europe/Moscow")
+    user = await users.create_user(session, "goal-sosed@example.org", "sosed-password", "Сосед")
+    await families.add_adult(session, other, user, "Сосед", "man")
+    child = await families.add_child(session, other, "Ваня", "panda", AgeGroup.AGE_6_7, True)
+    await families.set_pin(session, other, "3917")
+    await session.commit()
+    login = await client.post(
+        "/api/auth/login", json={"email": "goal-sosed@example.org", "password": "sosed-password"}
+    )
+    adult = login.json()["access_token"]
+    started = await client.post(
+        "/api/child-mode/start", json={"child_id": str(child)}, headers=bearer(adult)
+    )
+    for token in (adult, started.json()["access_token"]):
+        response = await client.get("/api/goal", headers=bearer(token))
+        assert response.status_code == 404
+        assert "Поход" not in response.text

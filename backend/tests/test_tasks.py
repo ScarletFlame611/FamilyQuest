@@ -3,9 +3,12 @@ from datetime import timedelta
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import now_utc
+from app.modules.child_mode.enums import ChildEventType
+from app.modules.child_mode.models import ChildEvent
 from app.modules.tasks import service as tasks
 from app.modules.tasks.enums import TaskIcon
 from app.seed import PAPA_EMAIL, DemoFamily
@@ -20,6 +23,7 @@ async def task_id(client: AsyncClient, token: str, path: str, title: str) -> str
     return next(t["id"] for t in tasks if t["title"] == title)
 
 
+@pytest.mark.us06
 async def test_child_sees_only_own_tasks_and_family_board(client: AsyncClient, demo: DemoFamily):
     masha = await child_token(client, demo.masha_id)
     my = (await client.get("/api/tasks/my", headers=bearer(masha))).json()
@@ -41,6 +45,7 @@ async def test_child_sees_only_own_tasks_and_family_board(client: AsyncClient, d
     assert {t["assignee_name"] for t in petya_tasks} == {"Петя"}
 
 
+@pytest.mark.us08
 async def test_mark_rules(client: AsyncClient, demo: DemoFamily):
     masha = await child_token(client, demo.masha_id)
     petya = await child_token(client, demo.petya_id)
@@ -57,6 +62,7 @@ async def test_mark_rules(client: AsyncClient, demo: DemoFamily):
     assert again.json()["detail"] == "Дело уже отмечено и ждёт проверки"
 
 
+@pytest.mark.us08
 async def test_repeated_mark_with_same_key_returns_same_answer(
     client: AsyncClient, demo: DemoFamily
 ):
@@ -74,6 +80,7 @@ async def test_repeated_mark_with_same_key_returns_same_answer(
     assert other_request.status_code == 422
 
 
+@pytest.mark.us08
 @pytest.mark.risk
 async def test_parallel_repeats_with_same_key_run_once(client: AsyncClient, demo: DemoFamily):
     masha = await child_token(client, demo.masha_id)
@@ -151,6 +158,7 @@ async def test_reject_returns_task_with_reason(client: AsyncClient, demo: DemoFa
     assert wrong.status_code == 409
 
 
+@pytest.mark.us06
 async def test_create_task_validation(client: AsyncClient, demo: DemoFamily):
     mama = await adult_token(client)
     created = await client.post(
@@ -248,3 +256,73 @@ async def test_my_tasks_skip_confirmed_on_previous_days(
         ("Полить цветы", "assigned"),
         ("Покормить кота", "confirmed"),
     ]
+
+
+@pytest.mark.us06
+async def test_task_with_description_appears_for_assignee(client: AsyncClient, demo: DemoFamily):
+    mama = await adult_token(client)
+    created = await client.post(
+        "/api/tasks",
+        json={
+            "title": "Заправить кровать",
+            "description": "Подушку положить сверху",
+            "icon": "bed",
+            "points": 5,
+            "assignee_id": str(demo.masha_id),
+        },
+        headers=bearer(mama),
+    )
+    assert created.status_code == 201
+    masha = await child_token(client, demo.masha_id)
+    my = (await client.get("/api/tasks/my", headers=bearer(masha))).json()
+    task = next(t for t in my if t["id"] == created.json()["id"])
+    assert (task["title"], task["description"], task["points"], task["status"]) == (
+        "Заправить кровать",
+        "Подушку положить сверху",
+        5,
+        "assigned",
+    )
+    petya = await child_token(client, demo.petya_id)
+    others = (await client.get("/api/tasks/my", headers=bearer(petya))).json()
+    assert created.json()["id"] not in [t["id"] for t in others]
+
+    without = await client.post(
+        "/api/tasks",
+        json={"title": "Полить цветы", "description": "  ", "icon": "plant", "points": 3},
+        headers=bearer(mama),
+    )
+    assert without.json()["description"] is None
+
+
+@pytest.mark.us06
+@pytest.mark.parametrize("points", [0, -5, 2.5, "десять"])
+async def test_task_price_is_positive_integer(client: AsyncClient, demo: DemoFamily, points):
+    mama = await adult_token(client)
+    response = await client.post(
+        "/api/tasks", json={"title": "Дело", "icon": "bed", "points": points}, headers=bearer(mama)
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.us08
+async def test_parallel_presses_with_same_key_leave_one_mark(
+    client: AsyncClient, session: AsyncSession, demo: DemoFamily
+):
+    masha = await child_token(client, demo.masha_id)
+    toys = await task_id(client, masha, "/api/tasks/my", "Убрать игрушки")
+    await warm_pool(client, masha)
+    headers = with_key(masha, "mark-toys-press")
+    responses = await asyncio.gather(
+        *(client.post(f"/api/tasks/{toys}/mark", headers=headers) for _ in range(5))
+    )
+    assert {r.status_code for r in responses} == {200}
+    assert {r.json()["marked_at"] for r in responses} == {responses[0].json()["marked_at"]}
+    assert responses[0].json()["status"] == "marked"
+    marks = await session.scalar(
+        select(func.count()).where(
+            ChildEvent.type == ChildEventType.TASK_MARKED, ChildEvent.detail == "Убрать игрушки"
+        )
+    )
+    assert marks == 1
+    pending = await client.get("/api/tasks/pending", headers=bearer(await adult_token(client)))
+    assert [t["id"] for t in pending.json()] == [toys]

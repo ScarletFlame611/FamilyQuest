@@ -4,7 +4,7 @@ import type { Task } from "../shared/api/types";
 import { TASK_ICONS, avatar } from "../shared/catalog";
 import { navigate } from "../shared/lib/router";
 import { Tile } from "../shared/ui/layout";
-import { useChild } from "./context";
+import { openStars, useChild } from "./context";
 import { KeyIcon } from "./HandoverSheet";
 
 const ARROW = (
@@ -23,9 +23,14 @@ const ARROW = (
 
 function BalanceChip() {
   const { balance } = useChild();
-  const value = balance?.available ?? 0;
+  // Отрицательного числа на счётчике ребёнок не видит: что такое минус, объясняет экран звёздочек
+  const value = Math.max(0, balance?.available ?? 0);
   return (
-    <button className="bal" onClick={() => navigate("/kid/shop")} aria-label={`Мои звёздочки: ${value}`}>
+    <button
+      className="bal"
+      onClick={() => openStars(window.location.pathname)}
+      aria-label={`Мои звёздочки: ${value}`}
+    >
       <i>⭐</i>
       {balance ? value : ""}
     </button>
@@ -69,7 +74,15 @@ export function PointsChip({ points }: { points: number }) {
   return <span className="chip me">+{points} ⭐</span>;
 }
 
-export function TaskCard({ task, onBoard }: { task: Task; onBoard?: boolean }) {
+export function TaskCard({
+  task,
+  onBoard,
+  fresh,
+}: {
+  task: Task;
+  onBoard?: boolean;
+  fresh?: boolean;
+}) {
   const { members } = useChild();
   const look = TASK_ICONS[task.icon];
   const done = task.status === "confirmed";
@@ -87,7 +100,7 @@ export function TaskCard({ task, onBoard }: { task: Task; onBoard?: boolean }) {
     author?.avatar === "woman" ? "Добавила" : author?.avatar === "man" ? "Добавил" : "Добавлено:";
   return (
     <button
-      className={`tcard ${done ? "done" : ""}`}
+      className={`tcard ${done ? "done" : ""} ${fresh ? "fresh" : ""}`}
       onClick={() => navigate(`/kid/task/${task.id}`)}
       aria-label={task.title}
     >
@@ -99,17 +112,49 @@ export function TaskCard({ task, onBoard }: { task: Task; onBoard?: boolean }) {
             {added} {task.created_by_name}
           </span>
         )}
+        {/* Дело вернули после отметки или отменили подтверждение: ребёнок видит почему,
+            а после новой отметки сервер очищает причину, и строка пропадает */}
+        {task.status === "assigned" && task.reject_reason && (
+          <span className="who-gave">↩️ Вернули: {task.reject_reason}</span>
+        )}
       </span>
       {side}
     </button>
   );
 }
 
-export function AutoReturnTimer() {
+export function AutoReturnTimer({ seconds }: { seconds?: number }) {
   return (
     <div className="timer" aria-hidden="true">
-      <i />
+      <i style={seconds ? { animationDuration: `${seconds}s` } : undefined} />
     </div>
+  );
+}
+
+export function JumpCard({
+  to,
+  emoji,
+  text,
+  hint,
+  label,
+}: {
+  to: string;
+  emoji: string;
+  text: string;
+  hint: string;
+  label: string;
+}) {
+  return (
+    <button className="jump" onClick={() => navigate(to)} aria-label={label}>
+      <span className="tile">{emoji}</span>
+      <span>
+        {text}
+        <small>{hint}</small>
+      </span>
+      <span className="go" aria-hidden="true">
+        →
+      </span>
+    </button>
   );
 }
 

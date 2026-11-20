@@ -1,4 +1,4 @@
-import { getSession, setSession } from "../session/session";
+import { getSession, latestSession, setSession } from "../session/session";
 import type { Tokens } from "./types";
 
 export type ErrorBody = { detail?: string; attempts_left?: number; missing?: number };
@@ -36,41 +36,68 @@ export function newIdempotencyKey(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+const REQUEST_TIMEOUT_MS = 15_000;
+
 async function send(method: string, path: string, options: Options): Promise<Response> {
   const headers: Record<string, string> = {};
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
   if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
   const session = getSession();
   if (options.auth !== false && session) headers.Authorization = `Bearer ${session.accessToken}`;
+  // Без предела запрос на плохой связи может висеть бесконечно, и экран так и останется
+  // на «Загружаем». Повтор после таймаута безопасен: изменения идут с ключом идемпотентности
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     return await fetch(path, {
       method,
       headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      signal: controller.signal,
     });
   } catch {
     throw new NetworkError();
+  } finally {
+    clearTimeout(timer);
   }
 }
 
-let refreshing: Promise<boolean> | null = null;
+// «expired» — сервер отказал именно этому refresh-токену, и выходить надо;
+// «offline» — сервер не ответил толком, и сессию терять нельзя
+type RefreshResult = "ok" | "expired" | "offline";
 
-async function refreshTokens(): Promise<boolean> {
-  const session = getSession();
-  if (!session) return false;
-  const response = await send("POST", "/api/auth/refresh", {
-    body: { refresh_token: session.refreshToken },
-    auth: false,
-  });
-  if (!response.ok) return false;
+let refreshing: Promise<RefreshResult> | null = null;
+
+// Сколько ждать, пока соседняя вкладка, успевшая обменять тот же токен, сохранит новый
+const OTHER_TAB_GRACE_MS = 500;
+
+async function refreshTokens(): Promise<RefreshResult> {
+  const session = latestSession();
+  if (!session) return "expired";
+  let response: Response;
+  try {
+    response = await send("POST", "/api/auth/refresh", {
+      body: { refresh_token: session.refreshToken },
+      auth: false,
+    });
+  } catch {
+    return "offline";
+  }
+  // Пока шло обновление, сессию могли сменить: другая вкладка обменяла токен
+  // или включили детский режим. Тогда повторяем запрос с тем, что есть сейчас
+  const changed = () => latestSession()?.refreshToken !== session.refreshToken;
+  if (changed()) return "ok";
+  if (response.status === 401) {
+    await new Promise((resolve) => setTimeout(resolve, OTHER_TAB_GRACE_MS));
+    return changed() ? "ok" : "expired";
+  }
+  if (!response.ok) return "offline";
   const tokens = (await response.json()) as Tokens;
-  // Пока шло обновление, сессию могли сменить (например, включили детский режим)
-  if (getSession()?.refreshToken !== session.refreshToken) return true;
   setSession({ role: session.role, accessToken: tokens.access_token, refreshToken: tokens.refresh_token });
-  return true;
+  return "ok";
 }
 
-function refreshOnce(): Promise<boolean> {
+function refreshOnce(): Promise<RefreshResult> {
   refreshing ??= refreshTokens().finally(() => {
     refreshing = null;
   });
@@ -80,13 +107,17 @@ function refreshOnce(): Promise<boolean> {
 export async function request<T>(method: string, path: string, options: Options = {}): Promise<T> {
   let response = await send(method, path, options);
   if (response.status === 401 && options.auth !== false && !options.keep401) {
-    if (await refreshOnce()) {
-      response = await send(method, path, options);
-    }
-    if (response.status === 401) {
+    const failed = getSession();
+    const refreshed = await refreshOnce();
+    if (refreshed === "offline") throw new NetworkError();
+    if (refreshed === "ok") response = await send(method, path, options);
+    // Выходим, только если за это время сессию никто не заменил на рабочую
+    if (response.status === 401 && getSession()?.refreshToken === failed?.refreshToken) {
       setSession(null);
     }
   }
+  // 502–504 отдаёт прокси, когда сам API недоступен: для человека это та же «нет связи»
+  if (response.status >= 502 && response.status <= 504) throw new NetworkError();
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as ErrorBody;
     throw new ApiError(response.status, body);
