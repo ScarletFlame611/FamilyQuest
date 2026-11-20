@@ -8,7 +8,14 @@ from app.deps import AdultDep, MemberDep, SessionDep
 from app.modules.child_mode import service as child_mode
 from app.modules.child_mode.enums import ChildEventType
 from app.modules.tasks import service
-from app.modules.tasks.schemas import RejectIn, TaskCreateIn, TaskOut
+from app.modules.tasks.schemas import (
+    ConfirmAllIn,
+    ConfirmAllOut,
+    RejectIn,
+    SkippedTaskOut,
+    TaskCreateIn,
+    TaskOut,
+)
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
@@ -121,3 +128,18 @@ async def confirm(
         return _out(await service.confirm(session, adult.family_id, task_id))
 
     return await run_idempotent(session, adult.member_id, key, f"confirm:{task_id}", action)
+
+
+@router.post("/confirm-all", response_model=ConfirmAllOut)
+async def confirm_all(
+    body: ConfirmAllIn, adult: AdultDep, session: SessionDep, key: IdempotencyKeyHeader = None
+) -> Response:
+    async def action() -> ConfirmAllOut:
+        result = await service.confirm_many(session, adult.family_id, body.task_ids)
+        return ConfirmAllOut(
+            confirmed=[_out(view) for view in result.confirmed],
+            skipped=[SkippedTaskOut(**asdict(s)) for s in result.skipped],
+        )
+
+    ids = ",".join(sorted(str(task_id) for task_id in body.task_ids))
+    return await run_idempotent(session, adult.member_id, key, f"confirm-all:{ids}", action)

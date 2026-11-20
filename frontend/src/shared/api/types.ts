@@ -9,6 +9,7 @@ export type Member = Schemas["MemberOut"];
 export type Task = Schemas["TaskOut"];
 export type TaskCreate = Schemas["TaskCreateIn"];
 export type TaskIcon = Schemas["TaskIcon"];
+export type ConfirmAll = Schemas["ConfirmAllOut"];
 export type Balance = Schemas["BalanceOut"];
 export type Entry = Schemas["EntryOut"];
 export type RewardOffer = Schemas["RewardOfferOut"];

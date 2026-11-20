@@ -4,6 +4,7 @@ import type {
   Balance,
   ChildEventType,
   ChildSession,
+  ConfirmAll,
   Entry,
   Family,
   Goal,
@@ -85,6 +86,11 @@ export const api = {
     request<Task>("POST", `/api/tasks/${id}/mark`, { idempotencyKey: key }),
   confirm: (key: string, id: string) =>
     request<Task>("POST", `/api/tasks/${id}/confirm`, { idempotencyKey: key }),
+  confirmAll: (key: string, taskIds: string[]) =>
+    request<ConfirmAll>("POST", "/api/tasks/confirm-all", {
+      body: { task_ids: taskIds },
+      idempotencyKey: key,
+    }),
 
   balance: () => request<Balance>("GET", "/api/balance"),
   ledger: () => request<Entry[]>("GET", "/api/ledger"),

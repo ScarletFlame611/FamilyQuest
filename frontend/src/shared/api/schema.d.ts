@@ -446,6 +446,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tasks/confirm-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm All */
+        post: operations["confirm_all_api_tasks_confirm_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/balance": {
         parameters: {
             query?: never;
@@ -737,6 +754,18 @@ export interface components {
             detail?: string | null;
             /** Ago Ms */
             ago_ms: number;
+        };
+        /** ConfirmAllIn */
+        ConfirmAllIn: {
+            /** Task Ids */
+            task_ids: string[];
+        };
+        /** ConfirmAllOut */
+        ConfirmAllOut: {
+            /** Confirmed */
+            confirmed: components["schemas"]["TaskOut"][];
+            /** Skipped */
+            skipped: components["schemas"]["SkippedTaskOut"][];
         };
         /** ContributionOut */
         ContributionOut: {
@@ -1082,6 +1111,18 @@ export interface components {
             current_password: string;
             /** Pin */
             pin: string;
+        };
+        /** SkippedTaskOut */
+        SkippedTaskOut: {
+            /**
+             * Task Id
+             * Format: uuid
+             */
+            task_id: string;
+            /** Title */
+            title: string;
+            /** Reason */
+            reason: string;
         };
         /** StartIn */
         StartIn: {
@@ -1961,6 +2002,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_all_api_tasks_confirm_all_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmAllIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmAllOut"];
                 };
             };
             /** @description Validation Error */

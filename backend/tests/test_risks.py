@@ -24,6 +24,7 @@ ADULT_ONLY = {
     ("POST", "/api/rewards"),
     ("PATCH", "/api/rewards/{reward_id}"),
     ("POST", "/api/goal"),
+    ("POST", "/api/tasks/confirm-all"),
     ("PUT", "/api/family/pin"),
     ("POST", "/api/family/children"),
     ("POST", "/api/child-mode/start"),
@@ -39,6 +40,7 @@ BODIES = {
     "/api/rewards": {"title": "Всё себе", "icon": "park", "price": 1},
     "/api/rewards/{reward_id}": {"price": 1},
     "/api/goal": {"title": "Своя цель", "icon": "pizza", "target": 1},
+    "/api/tasks/confirm-all": {"task_ids": [str(uuid.uuid4())]},  # noqa: TID251
     "/api/family/pin": {"current_password": "x", "pin": "2580"},
     "/api/family/children": {
         "name": "Брат",

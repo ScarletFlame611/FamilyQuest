@@ -283,6 +283,51 @@ async def confirm(session: AsyncSession, family_id: uuid.UUID, task_id: uuid.UUI
     return await _view(session, family_id, task)
 
 
+@dataclass(frozen=True)
+class SkippedTask:
+    task_id: uuid.UUID
+    title: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class ConfirmManyResult:
+    confirmed: list[TaskView]
+    skipped: list[SkippedTask]
+
+
+async def confirm_many(
+    session: AsyncSession, family_id: uuid.UUID, task_ids: list[uuid.UUID]
+) -> ConfirmManyResult:
+    """Засчитывает пачку отмеченных дел одной транзакцией; уже засчитанные пропускает."""
+    ids = sorted(set(task_ids))
+    # Задачи блокируются в порядке идентификатора, а счета — после них и тоже по порядку:
+    # так одновременные пачки двух взрослых не ждут друг друга по кругу
+    tasks = list(
+        await session.scalars(
+            select(Task)
+            .where(Task.id.in_(ids), Task.family_id == family_id)
+            .order_by(Task.id)
+            .with_for_update()
+        )
+    )
+    if len(tasks) != len(ids):
+        # Чужая или несуществующая задача в пачке — так же, как и по одной
+        raise TaskNotFoundError("Задача не найдена")
+    ready = [t for t in tasks if t.status is TaskStatus.MARKED and t.assignee_member_id]
+    skipped = [
+        SkippedTask(t.id, t.title, TRANSITION_ERRORS[t.status]) for t in tasks if t not in ready
+    ]
+    await ledger.lock_accounts(session, [t.assignee_member_id for t in ready])
+    now = now_utc()
+    for task in ready:
+        _transition(task, TaskAction.CONFIRM)
+        task.confirmed_at = now
+        await ledger.accrue(session, task.assignee_member_id, task.points, task_id=task.id)
+    await session.flush()
+    return ConfirmManyResult(await _views(session, family_id, ready), skipped)
+
+
 async def task_titles(
     session: AsyncSession, family_id: uuid.UUID, task_ids: list[uuid.UUID]
 ) -> dict[uuid.UUID, str]:

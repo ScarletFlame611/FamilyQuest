@@ -72,6 +72,18 @@ async def _lock_account(session: AsyncSession, member_id: uuid.UUID) -> Account:
     return account
 
 
+async def lock_accounts(session: AsyncSession, member_ids: list[uuid.UUID]) -> None:
+    """Блокирует счета участников в порядке возрастания идентификатора счёта."""
+    # Две пачки с пересекающимися счетами берут блокировки в одном порядке
+    # и поэтому не ждут друг друга по кругу
+    await session.execute(
+        select(Account.id)
+        .where(Account.member_id.in_(set(member_ids)))
+        .order_by(Account.id)
+        .with_for_update()
+    )
+
+
 async def accrue(
     session: AsyncSession,
     member_id: uuid.UUID,
