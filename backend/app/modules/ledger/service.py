@@ -56,12 +56,24 @@ class EarningView:
 
 @dataclass(frozen=True)
 class EntryView:
+    id: uuid.UUID
     kind: EntryKind
     amount: int
     task_id: uuid.UUID | None
     purchase_id: uuid.UUID | None
     note: str | None
     created_at: datetime
+
+
+def available_effect(kind: EntryKind, amount: int) -> int:
+    """Насколько запись изменила баланс для трат; сумма по всей истории равна ему."""
+    # Резерв и его снятие меняют только отложенное, поэтому для трат знак обратный;
+    # выдача награды убирает баллы и из баланса, и из резерва — для трат это ноль
+    if kind in (EntryKind.RESERVE, EntryKind.RELEASE):
+        return -amount
+    if kind is EntryKind.SPEND:
+        return 0
+    return amount
 
 
 def _positive(amount: int) -> None:
@@ -301,6 +313,7 @@ async def list_entries(
     )
     return [
         EntryView(
+            id=entry.id,
             kind=entry.kind,
             amount=entry.amount,
             task_id=entry.task_id,

@@ -19,6 +19,7 @@ const TABS = [
 const SECTION_OF: Record<string, string> = {
   "/tasks/new": "/more",
   "/rewards": "/more",
+  "/history": "/more",
   "/pin": "/more",
   "/sessions": "/more",
   "/child-mode": "/more",

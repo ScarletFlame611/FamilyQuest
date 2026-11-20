@@ -92,7 +92,7 @@ export function StarsScreen() {
         {(balance && minusNote(balance.balance)) ?? "Делай дела, и звёздочек станет больше"}
       </div>
       {taken.map((e) => (
-        <div key={e.created_at} className="note">
+        <div key={e.id} className="note">
           {e.amount > 0 ? "+" : ""}
           {e.amount} ⭐{e.kind === "reversal" ? ` за «${e.label}»` : ""}: {e.reason}
         </div>

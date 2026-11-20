@@ -104,6 +104,8 @@ export const api = {
       idempotencyKey: key,
     }),
   ledger: () => request<Entry[]>("GET", "/api/ledger"),
+  memberLedger: (memberId: string) => request<Entry[]>("GET", `/api/members/${memberId}/ledger`),
+  memberLedgerCsv: (memberId: string) => requestFile(`/api/members/${memberId}/ledger.csv`),
 
   rewards: () => request<RewardOffer[]>("GET", "/api/rewards"),
   manageRewards: () => request<RewardAdmin[]>("GET", "/api/rewards/manage"),

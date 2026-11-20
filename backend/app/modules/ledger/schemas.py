@@ -15,8 +15,11 @@ class BalanceOut(BaseModel):
 
 
 class EntryOut(BaseModel):
+    id: uuid.UUID
     kind: EntryKind
     amount: int
+    # Как запись изменила баланс для трат; сумма по всей истории равна ему
+    available_delta: int
     label: str
     # Почему взрослый отменил подтверждение или списал минус; у остальных записей пусто
     reason: str | None

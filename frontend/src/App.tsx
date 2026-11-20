@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { AdultGoalScreen } from "./adult/AdultGoalScreen";
 import { AdultTasksScreen } from "./adult/AdultTasksScreen";
 import { ChildModeScreen } from "./adult/ChildModeScreen";
+import { HistoryScreen } from "./adult/HistoryScreen";
 import { HomeScreen } from "./adult/HomeScreen";
 import { KanbanScreen } from "./adult/KanbanScreen";
 import { LoginScreen } from "./adult/LoginScreen";
@@ -23,6 +24,7 @@ const ADULT_SCREENS: Record<string, () => JSX.Element> = {
   "/goal": AdultGoalScreen,
   "/more": MoreScreen,
   "/rewards": RewardsScreen,
+  "/history": HistoryScreen,
   "/pin": PinScreen,
   "/child-mode": ChildModeScreen,
   "/sessions": SessionsScreen,

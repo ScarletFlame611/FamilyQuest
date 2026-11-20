@@ -28,6 +28,8 @@ ADULT_ONLY = {
     ("POST", "/api/tasks/confirm-all"),
     ("GET", "/api/balances"),
     ("POST", "/api/members/{member_id}/write-off"),
+    ("GET", "/api/members/{member_id}/ledger"),
+    ("GET", "/api/members/{member_id}/ledger.csv"),
     ("PUT", "/api/family/pin"),
     ("POST", "/api/family/children"),
     ("POST", "/api/child-mode/start"),

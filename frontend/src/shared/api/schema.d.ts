@@ -548,6 +548,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/members/{member_id}/ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Member Ledger */
+        get: operations["member_ledger_api_members__member_id__ledger_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{member_id}/ledger.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Member Ledger Csv */
+        get: operations["member_ledger_csv_api_members__member_id__ledger_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rewards": {
         parameters: {
             query?: never;
@@ -840,9 +874,16 @@ export interface components {
         EntryKind: "accrual" | "reserve" | "release" | "spend" | "reversal" | "write_off";
         /** EntryOut */
         EntryOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
             kind: components["schemas"]["EntryKind"];
             /** Amount */
             amount: number;
+            /** Available Delta */
+            available_delta: number;
             /** Label */
             label: string;
             /** Reason */
@@ -2263,6 +2304,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EntryOut"][];
+                };
+            };
+        };
+    };
+    member_ledger_api_members__member_id__ledger_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    member_ledger_csv_api_members__member_id__ledger_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

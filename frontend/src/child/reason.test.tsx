@@ -40,14 +40,16 @@ beforeEach(() => {
       ],
       "/api/ledger": [
         {
+          id: "e1",
           kind: "reversal",
           amount: -7,
           label: "Заправить кровать",
           reason: "Кровать не заправлена",
           created_at: ago(0),
         },
-        { kind: "accrual", amount: 7, label: "Заправить кровать", reason: null, created_at: ago(0) },
+        { id: "e2", kind: "accrual", amount: 7, label: "Заправить кровать", reason: null, created_at: ago(0) },
         {
+          id: "e3",
           kind: "reversal",
           amount: -5,
           label: "Собрать рюкзак",
