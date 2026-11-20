@@ -179,16 +179,27 @@ async def check_password(session: AsyncSession, user_id: uuid.UUID, password: st
     await _check_password_counted(user, password, WrongPasswordError("Неверный пароль"))
 
 
+# Ответ на обмен токена может потеряться в сети уже после того, как сервер погасил
+# старый токен. Короткое окно позволяет клиенту повторить обмен и не вылететь из аккаунта
+REFRESH_REUSE_GRACE = timedelta(seconds=30)
+
+
 async def refresh(session: AsyncSession, refresh_token: str) -> TokenPair:
-    """Меняет refresh-токен на новую пару; старый токен больше не действует."""
+    """Меняет refresh-токен на новую пару; старый принимается ещё 30 секунд на случай повтора."""
     token = await session.scalar(
         select(RefreshToken)
         .where(RefreshToken.token_hash == hash_refresh_token(refresh_token))
         .with_for_update()
     )
-    if token is None or token.revoked_at is not None or token.expires_at <= now_utc():
+    now = now_utc()
+    if token is None or token.expires_at <= now:
         raise InvalidRefreshTokenError("Сессия истекла, войдите заново")
-    token.revoked_at = now_utc()
+    if token.revoked_at is None:
+        token.revoked_at = now
+        token.rotated_at = now
+    elif token.rotated_at is None or now - token.rotated_at > REFRESH_REUSE_GRACE:
+        # Отозван выходом из аккаунта или обменян давно — такой токен не принимаем
+        raise InvalidRefreshTokenError("Сессия истекла, войдите заново")
     return await issue_tokens(
         session, token.member_id, token.family_id, token.role, token.child_session_id
     )

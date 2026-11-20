@@ -1,3 +1,4 @@
+import asyncio
 import re
 import uuid
 from datetime import timedelta
@@ -15,6 +16,7 @@ from app.modules.rewards import service as rewards
 from app.modules.tasks import service as tasks
 from app.modules.tasks.enums import TaskIcon
 from app.modules.users import service as users
+from app.modules.users.models import RefreshToken
 from app.seed import MAMA_EMAIL, DemoFamily
 from tests.factories import MAMA_PASSWORD
 
@@ -90,10 +92,20 @@ async def test_success_resets_failure_counter(client: AsyncClient, demo: DemoFam
     assert (await login(client)).status_code == 200
 
 
-async def test_refresh_rotates_and_logout_revokes(client: AsyncClient, demo: DemoFamily):
+async def test_refresh_rotates_and_logout_revokes(
+    client: AsyncClient, session: AsyncSession, demo: DemoFamily
+):
     first = (await login(client)).json()["refresh_token"]
     rotated = await client.post("/api/auth/refresh", json={"refresh_token": first})
     assert rotated.status_code == 200
+    assert rotated.json()["refresh_token"] != first
+    # Обменянный токен перестаёт действовать, как только кончилось окно повтора
+    await session.execute(
+        update(RefreshToken)
+        .values(rotated_at=now_utc() - timedelta(seconds=31))
+        .where(RefreshToken.rotated_at.is_not(None))
+    )
+    await session.commit()
     reused = await client.post("/api/auth/refresh", json={"refresh_token": first})
     assert reused.status_code == 401
 
@@ -184,3 +196,30 @@ async def test_adult_token_of_deleted_family_is_rejected(
     await families.delete_family(session, demo.family_id)
     await session.commit()
     assert (await client.get("/api/family", headers=bearer(token))).status_code == 401
+
+
+async def test_lost_refresh_answer_can_be_retried_once_more(client: AsyncClient, demo: DemoFamily):
+    first = (await login(client)).json()["refresh_token"]
+    # Первый ответ «потерялся»: клиент не узнал новую пару и повторяет обмен
+    await client.post("/api/auth/refresh", json={"refresh_token": first})
+    retried = await client.post("/api/auth/refresh", json={"refresh_token": first})
+    assert retried.status_code == 200
+    me = await client.get("/api/me", headers=bearer(retried.json()["access_token"]))
+    assert me.status_code == 200
+
+
+async def test_logged_out_token_gets_no_grace(client: AsyncClient, demo: DemoFamily):
+    first = (await login(client)).json()["refresh_token"]
+    await client.post("/api/auth/logout", json={"refresh_token": first})
+    reused = await client.post("/api/auth/refresh", json={"refresh_token": first})
+    assert reused.status_code == 401
+
+
+async def test_parallel_refresh_with_same_token_keeps_both_tabs(
+    client: AsyncClient, demo: DemoFamily
+):
+    first = (await login(client)).json()["refresh_token"]
+    responses = await asyncio.gather(
+        *(client.post("/api/auth/refresh", json={"refresh_token": first}) for _ in range(3))
+    )
+    assert [r.status_code for r in responses] == [200, 200, 200]
