@@ -30,6 +30,18 @@ services:
       db:
         condition: service_healthy
 
+  # Фоновый обработчик: тот же код, что у API, но отдельным процессом. Перезагрузки
+  # при правке кода нет, после изменений его перезапускают командой restart worker
+  worker:
+    build: ./backend
+    command: python -m app.worker run
+    env_file: .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
   frontend:
     image: node:22-alpine
     working_dir: /app

@@ -206,6 +206,11 @@ async def get_family(session: AsyncSession, family_id: uuid.UUID) -> FamilyInfo:
     )
 
 
+async def lock_family(session: AsyncSession, family_id: uuid.UUID) -> None:
+    """Блокирует строку семьи до конца транзакции, чтобы действия семьи шли по очереди."""
+    await session.scalar(select(Family.id).where(Family.id == family_id).with_for_update())
+
+
 async def get_member(
     session: AsyncSession, family_id: uuid.UUID, member_id: uuid.UUID
 ) -> MemberInfo:

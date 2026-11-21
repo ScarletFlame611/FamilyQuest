@@ -37,6 +37,9 @@ ADULT_ONLY = {
     ("GET", "/api/child-mode/sessions"),
     ("GET", "/api/child-mode/sessions/{session_id}/events"),
     ("GET", "/api/child-mode/sessions/{session_id}/events.csv"),
+    ("POST", "/api/family/exports"),
+    ("GET", "/api/family/exports"),
+    ("GET", "/api/family/exports/{export_id}/file"),
 }
 
 BODIES = {
@@ -94,6 +97,7 @@ async def test_t1_t4_child_token_gets_403_on_every_adult_action(
             session_id=some_id,
             reward_id=some_id,
             member_id=some_id,
+            export_id=some_id,
         )
         response = await client.request(method, url, json=BODIES.get(path), headers=bearer(masha))
         assert response.status_code == 403, f"{method} {path}: {response.status_code}"

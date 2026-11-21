@@ -8,6 +8,7 @@ import type {
   ConfirmAll,
   Entry,
   Family,
+  FamilyExport,
   Goal,
   GoalCreate,
   InviteInfo,
@@ -151,4 +152,9 @@ export const api = {
   sessionEvents: (id: string) =>
     request<SessionEvents>("GET", `/api/child-mode/sessions/${id}/events`),
   sessionEventsCsv: (id: string) => requestFile(`/api/child-mode/sessions/${id}/events.csv`),
+
+  familyExports: () => request<FamilyExport[]>("GET", "/api/family/exports"),
+  requestFamilyExport: (key: string) =>
+    request<FamilyExport>("POST", "/api/family/exports", { idempotencyKey: key }),
+  familyExportFile: (id: string) => requestFile(`/api/family/exports/${id}/file`),
 };

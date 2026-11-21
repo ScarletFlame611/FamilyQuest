@@ -10,6 +10,18 @@ from app.core.errors import ConflictError, InvalidInputError, NotFoundError
 from app.modules.ledger.enums import BALANCE_KINDS, EARNING_KINDS, RESERVE_KINDS, EntryKind
 from app.modules.ledger.models import Account, LedgerEntry
 
+ENTRY_LABELS = {
+    EntryKind.ACCRUAL: "Начисление за дело",
+    EntryKind.REVERSAL: "Отмена подтверждения",
+    EntryKind.WRITE_OFF: "Минус списан",
+    EntryKind.RESERVE: "Покупка, баллы отложены",
+    EntryKind.RELEASE: "Покупка отменена",
+    EntryKind.SPEND: "Награда выдана",
+}
+
+# Причину показываем только у записей, где её ввёл взрослый
+REASONED_KINDS = (EntryKind.REVERSAL, EntryKind.WRITE_OFF)
+
 
 class AccountNotFoundError(NotFoundError):
     pass

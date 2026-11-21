@@ -101,6 +101,37 @@ async def create_goal(
     return goal.id
 
 
+@dataclass(frozen=True)
+class GoalSummary:
+    title: str
+    target: int
+    progress: int
+    is_active: bool
+    created_at: datetime
+    reached_at: datetime | None
+
+
+async def list_goals(session: AsyncSession, family_id: uuid.UUID) -> list[GoalSummary]:
+    """Возвращает все цели семьи, включая прежние, с прогрессом и моментом достижения."""
+    goals = await session.scalars(
+        select(Goal).where(Goal.family_id == family_id).order_by(Goal.created_at)
+    )
+    summaries = []
+    for goal in goals:
+        progress = await _progress(session, goal)
+        summaries.append(
+            GoalSummary(
+                title=goal.title,
+                target=goal.target,
+                progress=sum(progress.by_member.values()),
+                is_active=goal.is_active,
+                created_at=goal.created_at,
+                reached_at=progress.reached_at,
+            )
+        )
+    return summaries
+
+
 async def get_active_goal(session: AsyncSession, family_id: uuid.UUID) -> GoalView:
     """Возвращает активную цель с прогрессом, вкладом каждого участника и лентой начислений."""
     goal = await session.scalar(select(Goal).where(Goal.family_id == family_id, Goal.is_active))

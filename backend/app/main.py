@@ -22,6 +22,7 @@ from app.core.errors import (
     UnauthorizedError,
 )
 from app.modules.child_mode.api import router as child_mode_router
+from app.modules.exports.api import router as exports_router
 from app.modules.families.api import router as families_router
 from app.modules.goals.api import router as goals_router
 from app.modules.ledger.api import router as ledger_router
@@ -49,6 +50,7 @@ for router in (
     rewards_router,
     purchases_router,
     goals_router,
+    exports_router,
 ):
     app.include_router(router)
 

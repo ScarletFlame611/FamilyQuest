@@ -30,3 +30,4 @@ export type GoalCreate = Schemas["GoalCreateIn"];
 export type ChildEventType = Schemas["ChildEventType"];
 export type ChildSession = Schemas["ChildSessionOut"];
 export type SessionEvents = Schemas["SessionEventsOut"];
+export type FamilyExport = Schemas["ExportOut"];

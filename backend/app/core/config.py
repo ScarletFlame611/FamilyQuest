@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     # Куда сид сохраняет журналы детских сессий перед пересозданием демо-семьи
     exports_dir: str = "exports"
 
+    # Сколько воркер владеет заданием: если он упал, через это время задание заберёт другой
+    job_lease_seconds: int = 60
+    # Как часто свободный воркер заглядывает в очередь
+    worker_poll_seconds: float = 1.0
+
 
 @lru_cache
 def get_settings() -> Settings:

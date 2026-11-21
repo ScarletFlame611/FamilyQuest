@@ -36,6 +36,19 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Фоновый обработчик из того же образа, что API; заданий хватает одного процесса
+  worker:
+    build:
+      context: ./backend
+      args:
+        REQUIREMENTS: requirements.txt
+    command: python -m app.worker run
+    env_file: .env.prod
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
   web:
     build: ./frontend
     ports:

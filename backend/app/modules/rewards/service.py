@@ -209,6 +209,16 @@ async def buy(
     return (await _purchase_views(session, family_id, [purchase]))[0]
 
 
+async def list_purchases(session: AsyncSession, family_id: uuid.UUID) -> list[PurchaseView]:
+    """Возвращает все покупки семьи в любом статусе, старые сверху."""
+    purchases = await session.scalars(
+        select(RewardPurchase)
+        .where(RewardPurchase.family_id == family_id)
+        .order_by(RewardPurchase.created_at)
+    )
+    return await _purchase_views(session, family_id, list(purchases))
+
+
 async def list_pending_purchases(session: AsyncSession, family_id: uuid.UUID) -> list[PurchaseView]:
     """Возвращает купленные награды, которые взрослые ещё не выдали."""
     purchases = await session.scalars(

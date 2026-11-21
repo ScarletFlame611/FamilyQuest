@@ -10,6 +10,7 @@ import { JoinScreen } from "./adult/JoinScreen";
 import { KanbanScreen } from "./adult/KanbanScreen";
 import { LoginScreen } from "./adult/LoginScreen";
 import { MoreScreen } from "./adult/MoreScreen";
+import { FamilyDataScreen } from "./adult/FamilyDataScreen";
 import { NewTaskScreen } from "./adult/NewTaskScreen";
 import { PinScreen } from "./adult/PinScreen";
 import { RewardsScreen } from "./adult/RewardsScreen";
@@ -22,6 +23,7 @@ const ADULT_SCREENS: Record<string, () => JSX.Element> = {
   "/": HomeScreen,
   "/tasks": AdultTasksScreen,
   "/tasks/new": NewTaskScreen,
+  "/family-data": FamilyDataScreen,
   "/kanban": KanbanScreen,
   "/goal": AdultGoalScreen,
   "/more": MoreScreen,

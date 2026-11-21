@@ -10,17 +10,14 @@ from app.core.idempotency import IdempotencyKeyHeader, run_idempotent
 from app.deps import AdultDep, MemberDep, SessionDep
 from app.modules.families import service as families
 from app.modules.ledger import service
-from app.modules.ledger.enums import EntryKind
 from app.modules.ledger.schemas import BalanceOut, EntryOut, MemberBalanceOut, WriteOffIn
 from app.modules.rewards import service as rewards
 from app.modules.tasks import service as tasks
 
 router = APIRouter(prefix="/api", tags=["ledger"])
 
+
 # У этих записей в заметке лежит причина, которую взрослый написал для ребёнка
-REASONED_KINDS = (EntryKind.REVERSAL, EntryKind.WRITE_OFF)
-
-
 def _balance(current: service.Balance) -> BalanceOut:
     return BalanceOut(
         balance=current.balance, reserved=current.reserved, available=current.available
@@ -79,7 +76,7 @@ async def _entries(
             or (purchases.get(entry.purchase_id) if entry.purchase_id else None)
             or entry.note
             or "",
-            reason=entry.note if entry.kind in REASONED_KINDS else None,
+            reason=entry.note if entry.kind in service.REASONED_KINDS else None,
             created_at=entry.created_at,
         )
         for entry in entries
@@ -99,16 +96,6 @@ async def member_ledger(
     return await _entries(session, adult.family_id, member_id, 200)
 
 
-KIND_LABELS = {
-    EntryKind.ACCRUAL: "Начисление за дело",
-    EntryKind.REVERSAL: "Отмена подтверждения",
-    EntryKind.WRITE_OFF: "Минус списан",
-    EntryKind.RESERVE: "Покупка, баллы отложены",
-    EntryKind.RELEASE: "Покупка отменена",
-    EntryKind.SPEND: "Награда выдана",
-}
-
-
 @router.get(
     "/members/{member_id}/ledger.csv",
     response_class=Response,
@@ -126,7 +113,7 @@ async def member_ledger_csv(member_id: uuid.UUID, adult: AdultDep, session: Sess
         writer.writerow(
             [
                 f"{entry.created_at.astimezone(zone):%d.%m.%Y %H:%M}",
-                KIND_LABELS[entry.kind],
+                service.ENTRY_LABELS[entry.kind],
                 entry.label,
                 entry.available_delta,
                 entry.reason or "",

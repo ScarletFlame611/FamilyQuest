@@ -21,6 +21,7 @@ const SECTION_OF: Record<string, string> = {
   "/rewards": "/more",
   "/history": "/more",
   "/invite": "/more",
+  "/family-data": "/more",
   "/pin": "/more",
   "/sessions": "/more",
   "/child-mode": "/more",

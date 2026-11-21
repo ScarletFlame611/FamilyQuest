@@ -85,12 +85,14 @@ async def test_every_endpoint_with_id_hides_other_family(client: AsyncClient, de
     purchase = await client.post(f"/api/rewards/{ice_cream}/buy", headers=bearer(masha))
     mama = await adult_token(client)
     sessions = (await client.get("/api/child-mode/sessions", headers=bearer(mama))).json()
+    export = await client.post("/api/family/exports", headers=bearer(mama))
     ids = {
         "task_id": my[0]["id"],
         "reward_id": ice_cream,
         "purchase_id": purchase.json()["id"],
         "session_id": sessions[0]["id"],
         "member_id": str(demo.masha_id),
+        "export_id": export.json()["id"],
     }
 
     adult, child = await stranger_tokens(client)

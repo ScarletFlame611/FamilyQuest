@@ -9,8 +9,10 @@ from app.core import idempotency  # noqa: F401
 from app.core.config import get_settings
 from app.core.db import Base
 from app.modules.child_mode import models as child_mode_models  # noqa: F401
+from app.modules.exports import models as exports_models  # noqa: F401
 from app.modules.families import models as families_models  # noqa: F401
 from app.modules.goals import models as goals_models  # noqa: F401
+from app.modules.jobs import models as jobs_models  # noqa: F401
 from app.modules.ledger import models as ledger_models  # noqa: F401
 from app.modules.rewards import models as rewards_models  # noqa: F401
 from app.modules.tasks import models as tasks_models  # noqa: F401

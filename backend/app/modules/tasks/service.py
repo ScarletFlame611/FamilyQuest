@@ -214,6 +214,14 @@ async def list_family_tasks(session: AsyncSession, family_id: uuid.UUID) -> list
     return await _views(session, family_id, list(tasks))
 
 
+async def list_all_tasks(session: AsyncSession, family_id: uuid.UUID) -> list[TaskView]:
+    """Возвращает все дела семьи за всё время, старые сверху."""
+    tasks = await session.scalars(
+        select(Task).where(Task.family_id == family_id).order_by(Task.created_at)
+    )
+    return await _views(session, family_id, list(tasks))
+
+
 async def list_board(session: AsyncSession, family_id: uuid.UUID) -> list[TaskView]:
     """Возвращает дела на общей доске семьи, которые ещё никто не взял."""
     tasks = await session.scalars(
